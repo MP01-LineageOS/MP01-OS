@@ -771,11 +771,11 @@ class EnvironmentAndContractTests(unittest.TestCase):
         self.assertFalse(
             set(AUDIT.MANDATORY_BUILD_INFO_KEYS) - set(config["expected"]["build_info"])
         )
-        self.assertEqual(config["after_epoch"], 1783737811)
+        self.assertEqual(config["after_epoch"], 1784095155)
         self.assertEqual(
             config["build_log"],
             "/home/user/MP01-LineageOS/.android-build/logs/"
-            "mp01-final-3d1bfa4f4be1-20260711T024331Z-fd587786d599.log",
+            "mp01-final-c88e03999276-20260715T055915Z-93cb550cc58a.log",
         )
         self.assertEqual(
             config["target_files"],
@@ -792,12 +792,164 @@ class EnvironmentAndContractTests(unittest.TestCase):
             "generic_arm64",
         )
         self.assertEqual(
+            config["paths"]["vendor_lineage_no_kernel_patch"],
+            "/home/user/MP01-LineageOS/MP01-LineageGSI/patches/personal/"
+            "platform_vendor_lineage/"
+            "0003-build-handle-generated-headers-for-no-kernel-targets.patch",
+        )
+        self.assertEqual(
+            config["paths"]["no_kernel_header_policy_verifier"],
+            "/home/user/MP01-LineageOS/.android-build/los23.2-microg/.mp01/"
+            "verify-no-kernel-header-policy.py",
+        )
+        no_kernel_build_info = {
+            "vendor/lineage base commit": "7f67df02757caeecd806c290f7914612d3d449f6",
+            "vendor/lineage base tree": "85f81c3aa61d9b59473c01350ed595f6655471a9",
+            "vendor/lineage prepared commit": "b085bb0f60ea6409d121f83b870f506f241ed653",
+            "vendor/lineage prepared tree": "1620732b96199fb17c0add4302124a621c5c8be4",
+            "vendor/lineage no-kernel header patch": (
+                "patches/personal/platform_vendor_lineage/"
+                "0003-build-handle-generated-headers-for-no-kernel-targets.patch"
+            ),
+            "vendor/lineage no-kernel header patch SHA256": (
+                "7aeb8693d713baa4c024a5d48fa15d6ccd19ac1a0354701eadefdf45c112cc4a"
+            ),
+            "No-kernel header policy verifier": (
+                "/home/user/MP01-LineageOS/.android-build/los23.2-microg/.mp01/"
+                "verify-no-kernel-header-policy.py"
+            ),
+            "No-kernel header policy verifier SHA256": (
+                "24822db54c1ae98f9963666b214be311c64d49f8e3e32ee80c32ca64ad8aff45"
+            ),
+            "Android TARGET_NO_KERNEL": "true",
+        }
+        for key, value in no_kernel_build_info.items():
+            self.assertEqual(config["expected"]["build_info"][key], value)
+        self.assertEqual(
+            config["expected"]["tool_sha256"]["vendor_lineage_no_kernel_patch"],
+            "7aeb8693d713baa4c024a5d48fa15d6ccd19ac1a0354701eadefdf45c112cc4a",
+        )
+        self.assertEqual(
+            config["expected"]["tool_sha256"]["no_kernel_header_policy_verifier"],
+            "24822db54c1ae98f9963666b214be311c64d49f8e3e32ee80c32ca64ad8aff45",
+        )
+        self.assertEqual(
+            config["paths"]["partner_gms_presigned_apk_patch"],
+            "/home/user/MP01-LineageOS/MP01-LineageGSI/patches/personal/"
+            "platform_vendor_partner_gms/"
+            "0001-build-preserve-presigned-partner-APK-bytes.patch",
+        )
+        self.assertEqual(
+            config["paths"]["presigned_partner_apk_policy_verifier"],
+            "/home/user/MP01-LineageOS/.android-build/los23.2-microg/.mp01/"
+            "verify-presigned-partner-apk-policy.py",
+        )
+        self.assertEqual(
+            config["paths"]["partner_zipalign"],
+            "/home/user/MP01-LineageOS/.android-build/los23.2-microg/out/host/"
+            "linux-x86/bin/zipalign",
+        )
+        self.assertEqual(
+            config["paths"]["runtime_libcxx"],
+            "/home/user/MP01-LineageOS/.android-build/los23.2-microg/out/host/"
+            "linux-x86/lib64/libc++.so",
+        )
+        self.assertEqual(
+            config["expected"]["partner_apk_sha256"],
+            {
+                "GmsCore": (
+                    "52597e77fd25fdd347574d0457ed1936a4b9561cf4c8d34e7ac8dd8191dfd4b9"
+                ),
+                "FakeStore": (
+                    "a973e0235a2829773a4faf36d235d5f703d1c04a2adff674ebaa535a2e78f937"
+                ),
+                "GsfProxy": (
+                    "86891b174301f06a1c84187b545a0a2a57044c6b768f3e84e865908743349692"
+                ),
+                "FDroid": (
+                    "985f5181d48bb6bafd54083a048b391271e0ab28385881cc41294fb01a222762"
+                ),
+                "FDroidPrivilegedExtension": (
+                    "1008525a17b4f6a93ac690f9c50dcb675b6bebf53d2879dbc98ba65a1cb2e28d"
+                ),
+            },
+        )
+        partner_build_info = {
+            "vendor/partner_gms base commit": (
+                "4b3b48033245800142045ce78038166f8aff6b01"
+            ),
+            "vendor/partner_gms base tree": (
+                "3c554b8fabffd2bdd0727aac770e403d9fec0505"
+            ),
+            "vendor/partner_gms prepared commit": (
+                "67e492737184fe9584750e07ad4c0ecfb40af67e"
+            ),
+            "vendor/partner_gms prepared tree": (
+                "06afb50166f27672b02c7b168b24de0bf30f8f21"
+            ),
+            "vendor/partner_gms presigned APK patch": (
+                "patches/personal/platform_vendor_partner_gms/"
+                "0001-build-preserve-presigned-partner-APK-bytes.patch"
+            ),
+            "vendor/partner_gms presigned APK patch SHA256": (
+                "146aa1a9307452217e087d818028bb158e8adf0a5a3a52e6bcaebe0665e7a1bf"
+            ),
+            "Presigned partner APK policy verifier": (
+                "/home/user/MP01-LineageOS/.android-build/los23.2-microg/.mp01/"
+                "verify-presigned-partner-apk-policy.py"
+            ),
+            "Presigned partner APK policy verifier SHA256": (
+                "ac198d84ad18824656024e014ce02d7d5865d6a7c47c857fa770344b9300b0bf"
+            ),
+            "Presigned partner APK byte preservation": "verified",
+            "Presigned partner APK alignment": "verified",
+        }
+        for key, value in partner_build_info.items():
+            self.assertEqual(config["expected"]["build_info"][key], value)
+        self.assertEqual(
+            config["expected"]["tool_sha256"]["partner_gms_presigned_apk_patch"],
+            "146aa1a9307452217e087d818028bb158e8adf0a5a3a52e6bcaebe0665e7a1bf",
+        )
+        self.assertEqual(
+            config["expected"]["tool_sha256"][
+                "presigned_partner_apk_policy_verifier"
+            ],
+            "ac198d84ad18824656024e014ce02d7d5865d6a7c47c857fa770344b9300b0bf",
+        )
+        self.assertEqual(
+            config["expected"]["tool_sha256"]["partner_zipalign"],
+            "5bd0a7ac65cb4901058d9aaa49e88b905010338964c4e2ae00afdb39e5d8f2f8",
+        )
+        self.assertEqual(
+            config["expected"]["tool_sha256"]["runtime_libcxx"],
+            "aab89aa18f9bec8e01c632b4230f4544fb6128b5d3df7ce6971c52b8c77bb11c",
+        )
+        self.assertTrue(
+            {entry for _, entry in AUDIT.PARTNER_APK_TARGETS}
+            <= set(AUDIT.REQUIRED_TARGET_FILES)
+        )
+        partner_projects = [
+            project
+            for project in config["expected"]["custom_projects"]
+            if project["path"] == "vendor/partner_gms"
+        ]
+        self.assertEqual(
+            partner_projects,
+            [
+                {
+                    "path": "vendor/partner_gms",
+                    "name": "lineageos4microg/android_vendor_partner_gms",
+                    "revision": "67e492737184fe9584750e07ad4c0ecfb40af67e",
+                }
+            ],
+        )
+        self.assertEqual(
             config["expected"]["build_info"]["Live MP01-LineageGSI commit"],
-            "3d1bfa4f4be14857b21dde879ec9f9e64a401c60",
+            "c88e039992760ada12f1df874453c2243d784862",
         )
         self.assertEqual(
             config["expected"]["build_info"]["Live MP01-LineageGSI tree"],
-            "8ccbad9c73c512d1f0bd480a78db5e0831a6391c",
+            "9d4bfca308b640e2b28f58f3502af40a7adf0c21",
         )
         self.assertEqual(
             config["paths"]["formal_build_harness"],
@@ -823,9 +975,42 @@ class EnvironmentAndContractTests(unittest.TestCase):
             config["expected"]["audit_sha256"]["audit.sh"],
             AUDIT.sha256_file(Path(__file__).with_name("audit.sh")),
         )
-        self.assertTrue(
-            AUDIT.PLACEHOLDER_RE.search(config["expected"]["build_log_sha256"])
+        self.assertEqual(
+            config["expected"]["build_log_sha256"],
+            "87681b4c33c0d9584cb5067b223c2f92219544dfafd1147017511d49d0f25d3a",
         )
+
+    def test_partner_gms_prepared_manifest_revision_is_enforced(self) -> None:
+        config = json.loads(Path(__file__).with_name("config.example.json").read_text())
+        expected = copy.deepcopy(config["expected"])
+        expected["project_count"] = len(expected["custom_projects"])
+        root = AUDIT.ET.Element("manifest")
+        AUDIT.ET.SubElement(
+            root,
+            "remote",
+            name="mp01-local",
+            fetch=expected["mp01_local_fetch"],
+        )
+        partner = None
+        for project in expected["custom_projects"]:
+            element = AUDIT.ET.SubElement(root, "project", **project)
+            if project["path"] == "vendor/partner_gms":
+                partner = element
+        self.assertIsNotNone(partner)
+
+        with tempfile.TemporaryDirectory(dir="/tmp") as temporary:
+            manifest = Path(temporary) / "manifest.xml"
+            AUDIT.ET.ElementTree(root).write(
+                manifest, encoding="utf-8", xml_declaration=True
+            )
+            AUDIT.verify_manifest(manifest, expected, {})
+
+            partner.set("revision", "4b3b48033245800142045ce78038166f8aff6b01")
+            AUDIT.ET.ElementTree(root).write(
+                manifest, encoding="utf-8", xml_declaration=True
+            )
+            with self.assertRaises(AUDIT.AuditError):
+                AUDIT.verify_manifest(manifest, expected, {})
 
 
 class BuildInfoContractTests(unittest.TestCase):
@@ -833,6 +1018,9 @@ class BuildInfoContractTests(unittest.TestCase):
         fields = {key: "expected" for key in AUDIT.MANDATORY_BUILD_INFO_KEYS}
         fields["Android OUT_DIR interface"] = "out"
         fields["Android product output name"] = "generic_arm64"
+        fields["Android TARGET_NO_KERNEL"] = "true"
+        fields["Presigned partner APK byte preservation"] = "verified"
+        fields["Presigned partner APK alignment"] = "verified"
         fields["Build log"] = "/tmp/formal-build.log"
         return fields
 
@@ -844,6 +1032,9 @@ class BuildInfoContractTests(unittest.TestCase):
             {
                 "Android OUT_DIR interface": "out",
                 "Android product output name": "generic_arm64",
+                "Android TARGET_NO_KERNEL": "true",
+                "Presigned partner APK byte preservation": "verified",
+                "Presigned partner APK alignment": "verified",
                 "Build log": "/tmp/formal-build.log",
             },
         )
@@ -861,6 +1052,163 @@ class BuildInfoContractTests(unittest.TestCase):
         del expectations["Android OUT_DIR interface"]
         with self.assertRaises(AUDIT.AuditError):
             AUDIT.verify_build_info_expectations(fields, expectations)
+
+    def test_missing_no_kernel_contract_fields_fail_closed(self) -> None:
+        fields = self.make_fields()
+        no_kernel_keys = (
+            "vendor/lineage base commit",
+            "vendor/lineage base tree",
+            "vendor/lineage prepared commit",
+            "vendor/lineage prepared tree",
+            "vendor/lineage no-kernel header patch",
+            "vendor/lineage no-kernel header patch SHA256",
+            "No-kernel header policy verifier",
+            "No-kernel header policy verifier SHA256",
+            "Android TARGET_NO_KERNEL",
+        )
+        for key in no_kernel_keys:
+            with self.subTest(key=key):
+                expectations = copy.deepcopy(fields)
+                del expectations[key]
+                with self.assertRaises(AUDIT.AuditError):
+                    AUDIT.verify_build_info_expectations(fields, expectations)
+
+    def test_wrong_target_no_kernel_fails_closed(self) -> None:
+        fields = self.make_fields()
+        fields["Android TARGET_NO_KERNEL"] = "false"
+        with self.assertRaises(AUDIT.AuditError):
+            AUDIT.verify_derived_build_info_fields(
+                fields, {"Android TARGET_NO_KERNEL": "true"}
+            )
+
+    def test_no_kernel_policy_input_hash_mismatches_fail_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source_verifier = root / "source-verifier.py"
+            retained_verifier = root / "retained-verifier.py"
+            retained_patch = root / "retained.patch"
+            source_verifier.write_bytes(b"verified policy\n")
+            retained_verifier.write_bytes(source_verifier.read_bytes())
+            retained_patch.write_bytes(b"verified patch\n")
+            source_paths = {
+                "no_kernel_header_policy_verifier": source_verifier,
+            }
+            retained = {
+                "no_kernel_header_policy_verifier": retained_verifier,
+                "vendor_lineage_no_kernel_patch": retained_patch,
+            }
+            fields = {
+                "No-kernel header policy verifier": str(source_verifier),
+                "No-kernel header policy verifier SHA256": AUDIT.sha256_file(
+                    retained_verifier
+                ),
+                "vendor/lineage no-kernel header patch SHA256": AUDIT.sha256_file(
+                    retained_patch
+                ),
+            }
+            AUDIT.verify_no_kernel_policy_build_info(fields, source_paths, retained)
+            wrong_path = copy.deepcopy(fields)
+            wrong_path["No-kernel header policy verifier"] = str(
+                root / "different-verifier.py"
+            )
+            with self.assertRaises(AUDIT.AuditError):
+                AUDIT.verify_no_kernel_policy_build_info(
+                    wrong_path, source_paths, retained
+                )
+            for key in (
+                "No-kernel header policy verifier SHA256",
+                "vendor/lineage no-kernel header patch SHA256",
+            ):
+                with self.subTest(key=key):
+                    mismatched = copy.deepcopy(fields)
+                    mismatched[key] = "0" * 64
+                    with self.assertRaises(AUDIT.AuditError):
+                        AUDIT.verify_no_kernel_policy_build_info(
+                            mismatched, source_paths, retained
+                        )
+
+    def test_missing_partner_apk_contract_fields_fail_closed(self) -> None:
+        fields = self.make_fields()
+        partner_keys = (
+            "vendor/partner_gms base commit",
+            "vendor/partner_gms base tree",
+            "vendor/partner_gms prepared commit",
+            "vendor/partner_gms prepared tree",
+            "vendor/partner_gms presigned APK patch",
+            "vendor/partner_gms presigned APK patch SHA256",
+            "Presigned partner APK policy verifier",
+            "Presigned partner APK policy verifier SHA256",
+            "Presigned partner APK byte preservation",
+            "Presigned partner APK alignment",
+        )
+        for key in partner_keys:
+            with self.subTest(key=key):
+                expectations = copy.deepcopy(fields)
+                del expectations[key]
+                with self.assertRaises(AUDIT.AuditError):
+                    AUDIT.verify_build_info_expectations(fields, expectations)
+                actual = copy.deepcopy(fields)
+                del actual[key]
+                with self.assertRaises(AUDIT.AuditError):
+                    AUDIT.verify_build_info_expectations(actual, fields)
+
+    def test_wrong_partner_apk_verification_status_fails_closed(self) -> None:
+        for key in (
+            "Presigned partner APK byte preservation",
+            "Presigned partner APK alignment",
+        ):
+            fields = self.make_fields()
+            fields[key] = "unverified"
+            with self.subTest(key=key), self.assertRaises(AUDIT.AuditError):
+                AUDIT.verify_derived_build_info_fields(fields, {key: "verified"})
+
+    def test_partner_apk_policy_input_hash_mismatches_fail_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source_verifier = root / "source-verifier.py"
+            retained_verifier = root / "retained-verifier.py"
+            retained_patch = root / "retained.patch"
+            source_verifier.write_bytes(b"verified policy\n")
+            retained_verifier.write_bytes(source_verifier.read_bytes())
+            retained_patch.write_bytes(b"verified patch\n")
+            source_paths = {
+                "presigned_partner_apk_policy_verifier": source_verifier,
+            }
+            retained = {
+                "presigned_partner_apk_policy_verifier": retained_verifier,
+                "partner_gms_presigned_apk_patch": retained_patch,
+            }
+            fields = {
+                "Presigned partner APK policy verifier": str(source_verifier),
+                "Presigned partner APK policy verifier SHA256": AUDIT.sha256_file(
+                    retained_verifier
+                ),
+                "vendor/partner_gms presigned APK patch SHA256": AUDIT.sha256_file(
+                    retained_patch
+                ),
+            }
+            AUDIT.verify_partner_apk_policy_build_info(
+                fields, source_paths, retained
+            )
+            wrong_path = copy.deepcopy(fields)
+            wrong_path["Presigned partner APK policy verifier"] = str(
+                root / "different-verifier.py"
+            )
+            with self.assertRaises(AUDIT.AuditError):
+                AUDIT.verify_partner_apk_policy_build_info(
+                    wrong_path, source_paths, retained
+                )
+            for key in (
+                "Presigned partner APK policy verifier SHA256",
+                "vendor/partner_gms presigned APK patch SHA256",
+            ):
+                with self.subTest(key=key):
+                    mismatched = copy.deepcopy(fields)
+                    mismatched[key] = "0" * 64
+                    with self.assertRaises(AUDIT.AuditError):
+                        AUDIT.verify_partner_apk_policy_build_info(
+                            mismatched, source_paths, retained
+                        )
 
     def test_wrong_android_output_interface_fails_closed(self) -> None:
         fields = self.make_fields()
@@ -882,6 +1230,90 @@ class BuildInfoContractTests(unittest.TestCase):
             AUDIT.verify_derived_build_info_fields(
                 fields, {"Android product output name": "generic_arm64"}
             )
+
+
+class PartnerApkArtifactTests(unittest.TestCase):
+    def make_fixture(
+        self, root: Path, zipalign_status: int = 0
+    ) -> tuple[Path, dict[str, Path], dict[str, str], Path, dict[str, str]]:
+        evidence = root / "evidence"
+        evidence.mkdir()
+        target_apks: dict[str, Path] = {}
+        expected_hashes: dict[str, str] = {}
+        for module, _ in AUDIT.PARTNER_APK_TARGETS:
+            target = root / f"{module}.apk"
+            target.write_bytes(f"fixture APK for {module}\n".encode("ascii"))
+            target_apks[module] = target
+            expected_hashes[module] = AUDIT.sha256_file(target)
+        zipalign = root / "zipalign"
+        zipalign.write_text(
+            f"#!/bin/sh\nexit {zipalign_status}\n", encoding="ascii"
+        )
+        zipalign.chmod(0o500)
+        return evidence, target_apks, expected_hashes, zipalign, {"PATH": "/usr/bin"}
+
+    def test_all_five_hashes_and_alignment_checks_pass(self) -> None:
+        with tempfile.TemporaryDirectory(dir="/tmp") as temporary:
+            fixture = self.make_fixture(Path(temporary))
+            evidence, targets, expected, zipalign, environment = fixture
+            verified = AUDIT.verify_partner_apk_artifacts(
+                evidence, targets, expected, zipalign, environment
+            )
+            self.assertEqual(verified, expected)
+            self.assertEqual(
+                len(list(evidence.glob("partner-apk-*-alignment.invocation.json"))),
+                5,
+            )
+            for module, _ in AUDIT.PARTNER_APK_TARGETS:
+                invocation = json.loads(
+                    (
+                        evidence
+                        / f"partner-apk-{module.casefold()}-alignment.invocation.json"
+                    ).read_text()
+                )
+                self.assertEqual(
+                    invocation["argv"],
+                    [str(zipalign), "-c", "-p", "4", str(targets[module])],
+                )
+
+    def test_corrupted_target_apk_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory(dir="/tmp") as temporary:
+            fixture = self.make_fixture(Path(temporary))
+            evidence, targets, expected, zipalign, environment = fixture
+            targets["GmsCore"].write_bytes(b"corrupted APK\n")
+            with self.assertRaises(AUDIT.AuditError):
+                AUDIT.verify_partner_apk_artifacts(
+                    evidence, targets, expected, zipalign, environment
+                )
+
+    def test_wrong_expected_hash_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory(dir="/tmp") as temporary:
+            fixture = self.make_fixture(Path(temporary))
+            evidence, targets, expected, zipalign, environment = fixture
+            expected["GmsCore"] = "0" * 64
+            with self.assertRaises(AUDIT.AuditError):
+                AUDIT.verify_partner_apk_artifacts(
+                    evidence, targets, expected, zipalign, environment
+                )
+
+    def test_missing_zipalign_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory(dir="/tmp") as temporary:
+            fixture = self.make_fixture(Path(temporary))
+            evidence, targets, expected, zipalign, environment = fixture
+            zipalign.unlink()
+            with self.assertRaises(AUDIT.AuditError):
+                AUDIT.verify_partner_apk_artifacts(
+                    evidence, targets, expected, zipalign, environment
+                )
+
+    def test_failed_alignment_check_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory(dir="/tmp") as temporary:
+            fixture = self.make_fixture(Path(temporary), zipalign_status=1)
+            evidence, targets, expected, zipalign, environment = fixture
+            with self.assertRaises(AUDIT.AuditError):
+                AUDIT.verify_partner_apk_artifacts(
+                    evidence, targets, expected, zipalign, environment
+                )
 
 
 if __name__ == "__main__":

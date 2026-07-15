@@ -92,6 +92,16 @@ REQUIRED_TARGET_FILES = (
 )
 SYSTEM_IMAGE_ENTRY = "IMAGES/system.img"
 TREBLE_APP_ENTRY = "SYSTEM/priv-app/TrebleApp/TrebleApp.apk"
+PARTNER_APK_TARGETS = (
+    ("GmsCore", "SYSTEM/product/priv-app/GmsCore/GmsCore.apk"),
+    ("FakeStore", "SYSTEM/product/priv-app/FakeStore/FakeStore.apk"),
+    ("GsfProxy", "SYSTEM/product/app/GsfProxy/GsfProxy.apk"),
+    ("FDroid", "SYSTEM/product/app/FDroid/FDroid.apk"),
+    (
+        "FDroidPrivilegedExtension",
+        "SYSTEM/product/priv-app/FDroidPrivilegedExtension/FDroidPrivilegedExtension.apk",
+    ),
+)
 TREBLE_MARKERS = (
     "persist.sys.phh.securize",
     "elixir_system_extra_pref",
@@ -128,6 +138,25 @@ MANDATORY_BUILD_INFO_KEYS = (
     "build/blueprint provider-validation patch SHA256",
     "Blueprint provider-validation verifier",
     "Blueprint provider-validation verifier SHA256",
+    "vendor/lineage base commit",
+    "vendor/lineage base tree",
+    "vendor/lineage prepared commit",
+    "vendor/lineage prepared tree",
+    "vendor/lineage no-kernel header patch",
+    "vendor/lineage no-kernel header patch SHA256",
+    "No-kernel header policy verifier",
+    "No-kernel header policy verifier SHA256",
+    "Android TARGET_NO_KERNEL",
+    "vendor/partner_gms base commit",
+    "vendor/partner_gms base tree",
+    "vendor/partner_gms prepared commit",
+    "vendor/partner_gms prepared tree",
+    "vendor/partner_gms presigned APK patch",
+    "vendor/partner_gms presigned APK patch SHA256",
+    "Presigned partner APK policy verifier",
+    "Presigned partner APK policy verifier SHA256",
+    "Presigned partner APK byte preservation",
+    "Presigned partner APK alignment",
     "Android JDK home",
     "Android JDK version",
     "TrebleApp APK signer temporary directory",
@@ -184,6 +213,7 @@ REQUIRED_PATH_KEYS = {
     "runtime_liblzma",
     "runtime_libzstd",
     "runtime_libexpat",
+    "runtime_libcxx",
     "apksigner_launcher",
     "apksigner_source_jar",
     "apksigner_jar",
@@ -194,6 +224,11 @@ REQUIRED_PATH_KEYS = {
     "metalava_policy_verifier",
     "blueprint_patch",
     "blueprint_provider_validation_verifier",
+    "vendor_lineage_no_kernel_patch",
+    "no_kernel_header_policy_verifier",
+    "partner_gms_presigned_apk_patch",
+    "presigned_partner_apk_policy_verifier",
+    "partner_zipalign",
     "formal_build_harness",
     "formal_build_log_helper",
 }
@@ -360,6 +395,29 @@ def write_new_fsynced(path: Path, content: bytes, mode: int = 0o600) -> None:
     try:
         with os.fdopen(descriptor, "wb") as output:
             output.write(content)
+            output.flush()
+            os.fsync(output.fileno())
+    except BaseException:
+        path.unlink(missing_ok=True)
+        raise
+    fsync_dir(path.parent)
+
+
+def write_new_stream_fsynced(
+    path: Path, source: BinaryIO, mode: int = 0o600
+) -> None:
+    descriptor = os.open(
+        path,
+        os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_CLOEXEC", 0),
+        mode,
+    )
+    try:
+        with os.fdopen(descriptor, "wb") as output:
+            while True:
+                block = source.read(CHUNK)
+                if not block:
+                    break
+                output.write(block)
             output.flush()
             os.fsync(output.fileno())
     except BaseException:
@@ -1180,6 +1238,11 @@ def verify_native_dependency_resolution(
         for key, path in source_paths.items()
         if key.startswith("runtime_")
     }
+    retained_runtime_paths = {
+        (evidence_dir / "tools" / "otatools" / "lib64" / "libc++.so").resolve(
+            strict=True
+        )
+    }
     retained_loader_path = retained_loader.resolve(strict=True)
     retained_java_root = signer_java_home_retained.resolve(strict=True)
     resolution: dict[str, list[str]] = {}
@@ -1216,6 +1279,7 @@ def verify_native_dependency_resolution(
             require(
                 path == retained_loader_path
                 or path in runtime_sources
+                or path in retained_runtime_paths
                 or path.is_relative_to(retained_java_root),
                 f"{label} resolves an unpinned native dependency: {path}",
             )
@@ -1478,6 +1542,108 @@ def verify_derived_build_info_fields(
             build_fields.get(key) == value,
             f"derived build-info mismatch for {key}",
         )
+
+
+def verify_no_kernel_policy_build_info(
+    build_fields: dict[str, str],
+    source_paths: dict[str, Path],
+    retained: dict[str, Path],
+) -> None:
+    require(
+        build_fields["No-kernel header policy verifier"]
+        == str(source_paths["no_kernel_header_policy_verifier"]),
+        "build-info path mismatch: No-kernel header policy verifier",
+    )
+    require(
+        build_fields["No-kernel header policy verifier SHA256"]
+        == sha256_file(retained["no_kernel_header_policy_verifier"]),
+        "build-info hash mismatch: No-kernel header policy verifier SHA256",
+    )
+    require(
+        build_fields["vendor/lineage no-kernel header patch SHA256"]
+        == sha256_file(retained["vendor_lineage_no_kernel_patch"]),
+        "vendor/lineage no-kernel header patch hash differs from retained input",
+    )
+
+
+def verify_partner_apk_policy_build_info(
+    build_fields: dict[str, str],
+    source_paths: dict[str, Path],
+    retained: dict[str, Path],
+) -> None:
+    require(
+        build_fields["Presigned partner APK policy verifier"]
+        == str(source_paths["presigned_partner_apk_policy_verifier"]),
+        "build-info path mismatch: Presigned partner APK policy verifier",
+    )
+    require(
+        build_fields["Presigned partner APK policy verifier SHA256"]
+        == sha256_file(retained["presigned_partner_apk_policy_verifier"]),
+        "build-info hash mismatch: Presigned partner APK policy verifier SHA256",
+    )
+    require(
+        build_fields["vendor/partner_gms presigned APK patch SHA256"]
+        == sha256_file(retained["partner_gms_presigned_apk_patch"]),
+        "vendor/partner_gms presigned APK patch hash differs from retained input",
+    )
+
+
+def verify_partner_apk_artifacts(
+    evidence_dir: Path,
+    target_apks: dict[str, Path],
+    expected_hashes: dict,
+    zipalign: Path,
+    environment: dict[str, str],
+) -> dict[str, str]:
+    modules = {module for module, _ in PARTNER_APK_TARGETS}
+    require(
+        isinstance(expected_hashes, dict) and set(expected_hashes) == modules,
+        "expected.partner_apk_sha256 must exactly pin all five partner APKs",
+    )
+    require(
+        set(target_apks) == modules,
+        "extracted target-files partner APK set is incomplete or unexpected",
+    )
+    zipalign_signature, _ = stable_regular_file_digest(
+        zipalign, "retained partner APK zipalign", False
+    )
+    require(
+        zipalign.resolve(strict=True) == zipalign
+        and (stat.S_IMODE(zipalign_signature.mode) & 0o111) != 0
+        and os.access(zipalign, os.X_OK),
+        "retained partner APK zipalign is not a canonical executable",
+    )
+
+    verified: dict[str, str] = {}
+    for module, _ in PARTNER_APK_TARGETS:
+        expected_sha256 = require_digest(
+            string_cfg(expected_hashes, module),
+            SHA256_RE,
+            f"{module} partner APK",
+        )
+        target_apk = target_apks[module]
+        _, actual_sha256 = stable_regular_file_digest(
+            target_apk, f"target-files {module} APK", False
+        )
+        require(
+            actual_sha256 == expected_sha256,
+            f"target-files {module} APK SHA256 mismatch",
+        )
+        run_command(
+            evidence_dir,
+            f"partner-apk-{module.casefold()}-alignment",
+            [str(zipalign), "-c", "-p", "4", str(target_apk)],
+            environment,
+        )
+        _, final_sha256 = stable_regular_file_digest(
+            target_apk, f"target-files {module} APK after zipalign", False
+        )
+        require(
+            final_sha256 == expected_sha256,
+            f"target-files {module} APK changed during alignment verification",
+        )
+        verified[module] = actual_sha256
+    return verified
 
 
 def extract_indented_block(text: str, start: str, end: str) -> bytes:
@@ -2259,6 +2425,14 @@ def audit(config_path: Path) -> tuple[dict, Path, Path]:
             python_stdlib_archive, "isolated Python standard-library ZIP"
         )
         require(source_paths["signer_aapt2"] == android_host_out / "bin" / "aapt2", "signer_aapt2 does not match original host selection")
+        require(
+            source_paths["partner_zipalign"] == android_host_out / "bin" / "zipalign",
+            "partner_zipalign does not match Android host output",
+        )
+        require(
+            source_paths["runtime_libcxx"] == android_host_out / "lib64" / "libc++.so",
+            "runtime_libcxx does not match Android host output",
+        )
         require(source_paths["avbtool"] == android_host_out / "bin" / "avbtool", "avbtool does not match host selection")
         require(source_paths["deapexer"] == android_host_out / "bin" / "deapexer", "deapexer does not match host selection")
         require(
@@ -2307,6 +2481,7 @@ def audit(config_path: Path) -> tuple[dict, Path, Path]:
             "runtime_liblzma": evidence_dir / "tools" / "runtime" / "liblzma.so.5",
             "runtime_libzstd": evidence_dir / "tools" / "runtime" / "libzstd.so.1",
             "runtime_libexpat": evidence_dir / "tools" / "runtime" / "libexpat.so.1",
+            "runtime_libcxx": evidence_dir / "tools" / "otatools" / "lib64" / "libc++.so",
             "apksigner_launcher": evidence_dir / "tools" / "source-apksigner-launcher",
             "apksigner_source_jar": evidence_dir / "tools" / "source-apksigner.jar",
             "apksigner_jar": evidence_dir / "tools" / "apksigner.jar",
@@ -2318,6 +2493,11 @@ def audit(config_path: Path) -> tuple[dict, Path, Path]:
             "metalava_policy_verifier": evidence_dir / "inputs" / "verify-metalava.py",
             "blueprint_patch": evidence_dir / "inputs" / "blueprint.patch",
             "blueprint_provider_validation_verifier": evidence_dir / "inputs" / "verify-blueprint.py",
+            "vendor_lineage_no_kernel_patch": evidence_dir / "inputs" / "vendor-lineage-no-kernel.patch",
+            "no_kernel_header_policy_verifier": evidence_dir / "inputs" / "verify-no-kernel-header-policy.py",
+            "partner_gms_presigned_apk_patch": evidence_dir / "inputs" / "partner-gms-presigned-apk.patch",
+            "presigned_partner_apk_policy_verifier": evidence_dir / "inputs" / "verify-presigned-partner-apk-policy.py",
+            "partner_zipalign": evidence_dir / "tools" / "otatools" / "bin" / "zipalign",
             "formal_build_harness": evidence_dir / "tools" / "run-formal-build.sh",
             "formal_build_log_helper": evidence_dir / "tools" / "formal-build-log.py",
         }
@@ -2497,6 +2677,7 @@ def audit(config_path: Path) -> tuple[dict, Path, Path]:
             "deapexer": retained["deapexer"],
             "env": retained["env_executable"],
             "openssl": retained["openssl"],
+            "partner-zipalign": retained["partner_zipalign"],
             "python": retained["python_executable"],
             "signer-aapt2": retained["signer_aapt2"],
             "signer-java": signer_java_retained,
@@ -2610,6 +2791,10 @@ def audit(config_path: Path) -> tuple[dict, Path, Path]:
             )
 
         treble_apk = evidence_dir / "TrebleApp.apk"
+        partner_apk_dir = evidence_dir / "partner-apks"
+        partner_apk_dir.mkdir(mode=0o700)
+        fsync_dir(evidence_dir)
+        target_partner_apks: dict[str, Path] = {}
         with zipfile.ZipFile(publication["target_files"]) as target_zip:
             entries = validate_zip(target_zip, "target-files snapshot")
             inventory = ("\n".join(sorted(entries)) + "\n").encode("utf-8")
@@ -2617,6 +2802,11 @@ def audit(config_path: Path) -> tuple[dict, Path, Path]:
             for name in (*REQUIRED_TARGET_FILES, SYSTEM_IMAGE_ENTRY):
                 require(name in entries, f"target-files lacks required entry: {name}")
                 require_regular_zip_entry(entries[name], f"target-files {name}")
+            for module, entry_name in PARTNER_APK_TARGETS:
+                target_apk = partner_apk_dir / f"{module}.apk"
+                with target_zip.open(entries[entry_name]) as source:
+                    write_new_stream_fsynced(target_apk, source, 0o400)
+                target_partner_apks[module] = target_apk
             with target_zip.open(entries[SYSTEM_IMAGE_ENTRY]) as zip_image, publication["image"].open("rb") as image_stream:
                 equal, target_image_sha, target_image_size = streams_equal(zip_image, image_stream)
             require(
@@ -2678,6 +2868,9 @@ def audit(config_path: Path) -> tuple[dict, Path, Path]:
             ),
             "Android OUT_DIR interface": "out",
             "Android product output name": android_product_output.name,
+            "Android TARGET_NO_KERNEL": "true",
+            "Presigned partner APK byte preservation": "verified",
+            "Presigned partner APK alignment": "verified",
             "Publication lock path": str(image_dir),
             "Build log": str(build_log_source),
         }
@@ -2698,6 +2891,18 @@ def audit(config_path: Path) -> tuple[dict, Path, Path]:
             build_fields["build/blueprint provider-validation patch SHA256"] == sha256_file(retained["blueprint_patch"]),
             "Blueprint patch hash differs from retained input",
         )
+        verify_no_kernel_policy_build_info(build_fields, source_paths, retained)
+        verify_partner_apk_policy_build_info(build_fields, source_paths, retained)
+        partner_apk_sha256 = verify_partner_apk_artifacts(
+            evidence_dir,
+            target_partner_apks,
+            cfg(expected, "partner_apk_sha256"),
+            retained["partner_zipalign"],
+            environment,
+        )
+        result["partner_apk_sha256"] = partner_apk_sha256
+        result["partner_apk_byte_preservation"] = "verified"
+        result["partner_apk_alignment"] = "verified"
         result["build_info_sha256"] = sha256_file(publication["build_info"])
         result["build_info_expectation_count"] = len(build_expectations)
 

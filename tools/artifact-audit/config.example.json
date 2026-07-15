@@ -1,11 +1,11 @@
 {
-  "after_epoch": 1783737811,
-  "build_log": "/home/user/MP01-LineageOS/.android-build/logs/mp01-final-3d1bfa4f4be1-20260711T024331Z-fd587786d599.log",
+  "after_epoch": 1784095155,
+  "build_log": "/home/user/MP01-LineageOS/.android-build/logs/mp01-final-c88e03999276-20260715T055915Z-93cb550cc58a.log",
   "logs_root": "/home/user/MP01-LineageOS/logs",
   "image_dir": "/home/user/MP01-LineageOS/images",
   "metadata_dir": "/home/user/MP01-LineageOS/images/metadata",
   "target_files": "/home/user/MP01-LineageOS/.android-build/los23.2-microg/out/target/product/generic_arm64/obj/PACKAGING/target_files_intermediates/lineage_arm64_bmN4-target_files.zip",
-  "evidence_dir": "/home/user/MP01-LineageOS/logs/REPLACE_ME_FINAL_ARTIFACT_EVIDENCE_DIRECTORY",
+  "evidence_dir": "/home/user/MP01-LineageOS/logs/mp01-final-c88e03999276-20260715T055915Z-93cb550cc58a-audit",
   "paths": {
     "android_host_out": "/home/user/MP01-LineageOS/.android-build/los23.2-microg/out/host/linux-x86",
     "python_executable": "/usr/bin/python3.14",
@@ -36,6 +36,7 @@
     "runtime_liblzma": "/usr/lib64/liblzma.so.5.8.1",
     "runtime_libzstd": "/usr/lib64/libzstd.so.1.5.7",
     "runtime_libexpat": "/usr/lib64/libexpat.so.1.12.1",
+    "runtime_libcxx": "/home/user/MP01-LineageOS/.android-build/los23.2-microg/out/host/linux-x86/lib64/libc++.so",
     "apksigner_launcher": "/home/user/.local/share/android-sdk/build-tools/30.0.3/apksigner",
     "apksigner_source_jar": "/home/user/.local/share/android-sdk/build-tools/30.0.3/lib/apksigner.jar",
     "apksigner_jar": "/home/user/MP01-LineageOS/.android-build/los23.2-microg/.mp01/treble-app-build-provenance.txt.apksigner.jar",
@@ -46,15 +47,27 @@
     "metalava_policy_verifier": "/home/user/MP01-LineageOS/.android-build/los23.2-microg/.mp01/verify-metalava-heap-policy.py",
     "blueprint_patch": "/home/user/MP01-LineageOS/MP01-LineageGSI/patches/personal/platform_build_blueprint/0001-blueprint-serialize-provider-validation.patch",
     "blueprint_provider_validation_verifier": "/home/user/MP01-LineageOS/.android-build/los23.2-microg/.mp01/verify-blueprint-provider-validation.py",
+    "vendor_lineage_no_kernel_patch": "/home/user/MP01-LineageOS/MP01-LineageGSI/patches/personal/platform_vendor_lineage/0003-build-handle-generated-headers-for-no-kernel-targets.patch",
+    "no_kernel_header_policy_verifier": "/home/user/MP01-LineageOS/.android-build/los23.2-microg/.mp01/verify-no-kernel-header-policy.py",
+    "partner_gms_presigned_apk_patch": "/home/user/MP01-LineageOS/MP01-LineageGSI/patches/personal/platform_vendor_partner_gms/0001-build-preserve-presigned-partner-APK-bytes.patch",
+    "presigned_partner_apk_policy_verifier": "/home/user/MP01-LineageOS/.android-build/los23.2-microg/.mp01/verify-presigned-partner-apk-policy.py",
+    "partner_zipalign": "/home/user/MP01-LineageOS/.android-build/los23.2-microg/out/host/linux-x86/bin/zipalign",
     "formal_build_harness": "/home/user/MP01-LineageOS/MP01-LineageGSI/scripts/run-formal-build.sh",
     "formal_build_log_helper": "/home/user/MP01-LineageOS/MP01-LineageGSI/scripts/formal-build-log.py"
   },
   "expected": {
     "audit_sha256": {
-      "audit.py": "87f2e39c3c770b2405c5446e8095f78819a1175f15d9cc959b40c973132d3c34",
+      "audit.py": "f23dfaaf621ec60a2b1e0f8126e2bc09c55adf161055fc5cacab030c7201a5c2",
       "audit.sh": "e1159c2c19a577d4c9a31d65d2bae987cf2e8ce44e892410739fe67135eb88f3"
     },
-    "build_log_sha256": "REPLACE_ME_FINAL_BUILD_LOG_SHA256",
+    "build_log_sha256": "87681b4c33c0d9584cb5067b223c2f92219544dfafd1147017511d49d0f25d3a",
+    "partner_apk_sha256": {
+      "GmsCore": "52597e77fd25fdd347574d0457ed1936a4b9561cf4c8d34e7ac8dd8191dfd4b9",
+      "FakeStore": "a973e0235a2829773a4faf36d235d5f703d1c04a2adff674ebaa535a2e78f937",
+      "GsfProxy": "86891b174301f06a1c84187b545a0a2a57044c6b768f3e84e865908743349692",
+      "FDroid": "985f5181d48bb6bafd54083a048b391271e0ab28385881cc41294fb01a222762",
+      "FDroidPrivilegedExtension": "1008525a17b4f6a93ac690f9c50dcb675b6bebf53d2879dbc98ba65a1cb2e28d"
+    },
     "signer_manifest_sha256": "0e0313015d4bba28f8fe85d91498d060a7c525d81980f3f100efeb7f3628dd03",
     "avb_public_key_sha1": "cdbb77177f731920bbe0a0f94f84d9038ae0617d",
     "treble_platform_certificate_sha256": "c8a2e9bccf597c2fb6dc66bee293fc13f2fc47ec77bc6b2b0d52c11f51192ab8",
@@ -141,19 +154,19 @@
       {
         "path": "vendor/partner_gms",
         "name": "lineageos4microg/android_vendor_partner_gms",
-        "revision": "4b3b48033245800142045ce78038166f8aff6b01"
+        "revision": "67e492737184fe9584750e07ad4c0ecfb40af67e"
       },
       {
         "path": "hardware/oplus",
         "name": "LineageOS/android_hardware_oplus",
-        "revision": "e48aa2ba72191c1d2f9d92ee5bbc26b9f60437f6"
+        "revision": "194f449694f9d54cff65cb63b5363de156ad991b"
       }
     ],
     "build_info": {
-      "Live MP01-LineageGSI commit": "3d1bfa4f4be14857b21dde879ec9f9e64a401c60",
-      "Live MP01-LineageGSI tree": "8ccbad9c73c512d1f0bd480a78db5e0831a6391c",
-      "Cloned support commit": "3d1bfa4f4be14857b21dde879ec9f9e64a401c60",
-      "Cloned support tree": "8ccbad9c73c512d1f0bd480a78db5e0831a6391c",
+      "Live MP01-LineageGSI commit": "c88e039992760ada12f1df874453c2243d784862",
+      "Live MP01-LineageGSI tree": "9d4bfca308b640e2b28f58f3502af40a7adf0c21",
+      "Cloned support commit": "c88e039992760ada12f1df874453c2243d784862",
+      "Cloned support tree": "9d4bfca308b640e2b28f58f3502af40a7adf0c21",
       "Workspace path policy": "/home/user/MP01-LineageOS/MP01-LineageGSI/scripts/workspace-paths.sh",
       "Workspace path policy SHA256": "5815def611ca7c5a10a92b3feb494f5537932b32f5503066acc25abb174ad55a",
       "Minimum free space GiB": "250",
@@ -174,6 +187,25 @@
       "build/blueprint provider-validation patch SHA256": "43cca96d3eb8d04a91a9b0637444889b62fe1a04a064910c68c2358e23326df1",
       "Blueprint provider-validation verifier": "/home/user/MP01-LineageOS/.android-build/los23.2-microg/.mp01/verify-blueprint-provider-validation.py",
       "Blueprint provider-validation verifier SHA256": "0b99430782c89ec0e65500e310594beeb801c2fd3b222a30daa3dbf1afd555d9",
+      "vendor/lineage base commit": "7f67df02757caeecd806c290f7914612d3d449f6",
+      "vendor/lineage base tree": "85f81c3aa61d9b59473c01350ed595f6655471a9",
+      "vendor/lineage prepared commit": "b085bb0f60ea6409d121f83b870f506f241ed653",
+      "vendor/lineage prepared tree": "1620732b96199fb17c0add4302124a621c5c8be4",
+      "vendor/lineage no-kernel header patch": "patches/personal/platform_vendor_lineage/0003-build-handle-generated-headers-for-no-kernel-targets.patch",
+      "vendor/lineage no-kernel header patch SHA256": "7aeb8693d713baa4c024a5d48fa15d6ccd19ac1a0354701eadefdf45c112cc4a",
+      "No-kernel header policy verifier": "/home/user/MP01-LineageOS/.android-build/los23.2-microg/.mp01/verify-no-kernel-header-policy.py",
+      "No-kernel header policy verifier SHA256": "24822db54c1ae98f9963666b214be311c64d49f8e3e32ee80c32ca64ad8aff45",
+      "Android TARGET_NO_KERNEL": "true",
+      "vendor/partner_gms base commit": "4b3b48033245800142045ce78038166f8aff6b01",
+      "vendor/partner_gms base tree": "3c554b8fabffd2bdd0727aac770e403d9fec0505",
+      "vendor/partner_gms prepared commit": "67e492737184fe9584750e07ad4c0ecfb40af67e",
+      "vendor/partner_gms prepared tree": "06afb50166f27672b02c7b168b24de0bf30f8f21",
+      "vendor/partner_gms presigned APK patch": "patches/personal/platform_vendor_partner_gms/0001-build-preserve-presigned-partner-APK-bytes.patch",
+      "vendor/partner_gms presigned APK patch SHA256": "146aa1a9307452217e087d818028bb158e8adf0a5a3a52e6bcaebe0665e7a1bf",
+      "Presigned partner APK policy verifier": "/home/user/MP01-LineageOS/.android-build/los23.2-microg/.mp01/verify-presigned-partner-apk-policy.py",
+      "Presigned partner APK policy verifier SHA256": "ac198d84ad18824656024e014ce02d7d5865d6a7c47c857fa770344b9300b0bf",
+      "Presigned partner APK byte preservation": "verified",
+      "Presigned partner APK alignment": "verified",
       "Android JDK home": "/home/user/MP01-LineageOS/.android-build/los23.2-microg/prebuilts/jdk/jdk21/linux-x86",
       "Android JDK version": "openjdk version \"21.0.4\" 2024-07-16; OpenJDK Runtime Environment Android_PDK (build 21.0.4+-12414455); OpenJDK 64-Bit Server VM Android_PDK (build 21.0.4+-12414455, mixed mode, sharing)",
       "TrebleApp APK signer Java": "/home/user/.local/share/jdks/temurin-17/bin/java",
@@ -195,9 +227,9 @@
       "ccache temporary directory": "/home/user/MP01-LineageOS/.android-build/ccache/tmp",
       "TrebleApp Gradle user home": "/home/user/MP01-LineageOS/.android-build/gradle",
       "TrebleApp APK signer temporary directory": "/home/user/MP01-LineageOS/.android-build/gradle/apksigner-tmp",
-      "Build lock path": "/home/user/MP01-LineageOS/.android-build/los23.2-microg/.mp01-build.lock",
+      "Build lock path": "/home/user/MP01-LineageOS/.android-build/los23.2-microg",
       "Publication lock path": "/home/user/MP01-LineageOS/images",
-      "Build log": "/home/user/MP01-LineageOS/.android-build/logs/mp01-final-3d1bfa4f4be1-20260711T024331Z-fd587786d599.log"
+      "Build log": "/home/user/MP01-LineageOS/.android-build/logs/mp01-final-c88e03999276-20260715T055915Z-93cb550cc58a.log"
     },
     "tool_sha256": {
       "python_executable": "3ef368f4224b8d4bc2e5f290ab3766dac0c975e1c77ba3665bbbd4e38891a0cf",
@@ -225,6 +257,7 @@
       "runtime_liblzma": "92b3d7df3518a5bcadf5834fd9f7934f15df0478da27897635b3a146d29251dd",
       "runtime_libzstd": "b2c84814ef30bb97ffac7dd52fbc52b4c37aa73cdd7a3f05b2fa5143a5982a83",
       "runtime_libexpat": "a108876b8b58d5900ea2717cce6b1b0aa4f58b30dee6cc3cbe1fab64a2487d1d",
+      "runtime_libcxx": "aab89aa18f9bec8e01c632b4230f4544fb6128b5d3df7ce6971c52b8c77bb11c",
       "apksigner_launcher": "b47549e373b895ce6ca620d0c7887e674d9615ffa837a86ac601dcfd04adb0f0",
       "apksigner_source_jar": "4295ef085c0de5cbd5d8e4c73126e948e20d3126db26a4f60125864c15f8b8cb",
       "apksigner_jar": "4295ef085c0de5cbd5d8e4c73126e948e20d3126db26a4f60125864c15f8b8cb",
@@ -235,6 +268,11 @@
       "metalava_policy_verifier": "3e94a4267ec6ea8f82254a7a214de29c9e5034ff4713077f4e54f47988bb5acb",
       "blueprint_patch": "43cca96d3eb8d04a91a9b0637444889b62fe1a04a064910c68c2358e23326df1",
       "blueprint_provider_validation_verifier": "0b99430782c89ec0e65500e310594beeb801c2fd3b222a30daa3dbf1afd555d9",
+      "vendor_lineage_no_kernel_patch": "7aeb8693d713baa4c024a5d48fa15d6ccd19ac1a0354701eadefdf45c112cc4a",
+      "no_kernel_header_policy_verifier": "24822db54c1ae98f9963666b214be311c64d49f8e3e32ee80c32ca64ad8aff45",
+      "partner_gms_presigned_apk_patch": "146aa1a9307452217e087d818028bb158e8adf0a5a3a52e6bcaebe0665e7a1bf",
+      "presigned_partner_apk_policy_verifier": "ac198d84ad18824656024e014ce02d7d5865d6a7c47c857fa770344b9300b0bf",
+      "partner_zipalign": "5bd0a7ac65cb4901058d9aaa49e88b905010338964c4e2ae00afdb39e5d8f2f8",
       "formal_build_harness": "938cc2842ca860704f727cfbd4f890227ccb93d44387f64e6be3f704b3403204",
       "formal_build_log_helper": "cf8a04c7d334caeb177750b7f2e9c2855e2835e231f9e45d21933619fd9ead07"
     }

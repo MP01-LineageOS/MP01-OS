@@ -25,7 +25,7 @@ an in-place flash.
    path. The adjacent `<log>.start-epoch` record must contain exactly
    `after_epoch` plus LF. The log must be an absolute, canonical, nonempty
    regular file whose mtime is after both the cutoff and the publication epoch.
-4. Replace every `REPLACE_ME...` value. Unresolved values are rejected.
+4. Replace any unresolved placeholder values. The auditor rejects them.
 5. Recalculate source, Python-tree, and both Java-tree expectations if a
    pinned input changed.
 6. Set `evidence_dir` to a new absolute strict descendant of `logs_root`.
@@ -44,16 +44,24 @@ Run the focused unit suite from the repository root with:
 /usr/bin/python3.14 -I -S tools/artifact-audit/test_audit.py
 ```
 
-The example remains a template until every path and expectation is replaced or
-independently revalidated for one completed build. It is not a record of a
-completed artifact audit.
+The checked-in example is pinned to the completed c88 audit from build epoch
+`1784126958`. That config is a reproducibility input, not the proof by itself.
+The completed record is the read-only evidence directory
+`/home/user/MP01-LineageOS/logs/mp01-final-c88e03999276-20260715T055915Z-93cb550cc58a-audit`
+and its sibling `.root.sha256` file. The result is
+`PASS_AUDIT_ONLY_NOT_FOR_IN_PLACE_FLASH`. Update and independently revalidate
+the config before using it for another build.
 
 The auditor copies the complete build log and start record, formal-build harness
-and log helper, every publication input, script, executable, JAR, manifest, and
-both complete Java runtimes into the new evidence directory before hashing or
-using the applicable retained executable. Every source file is hashed during
-the copy, reopened and hashed
-again immediately, and reopened and hashed once more before success. Source
+and log helper, every publication input, source-policy patch and verifier,
+script, executable, JAR, manifest, and both complete Java runtimes into the new
+evidence directory before hashing or using the applicable retained executable.
+This includes the vendor/lineage no-kernel header patch and the
+vendor/partner_gms presigned-APK patch with both persistent structural
+verifiers. The Android host `zipalign` selected for the partner APK check is
+also retained, SHA256-pinned, and included in native dependency resolution.
+Every source file is hashed during the copy, reopened and hashed again
+immediately, and reopened and hashed once more before success. Source
 and retained stat identities must also remain unchanged. The independently
 supplied config pins `audit.py` and `audit.sh` themselves.
 
@@ -71,8 +79,9 @@ supplied config pins `audit.py` and `audit.sh` themselves.
 - Native subprocesses still rely on the host kernel's dynamic-loader path.
   That explicit host-runtime trust boundary is pinned before use: loader,
   libpython, libc/libm compatibility DSOs, libgcc, OpenSSL/libz, bz2, lzma,
-  zstd, and expat are copied, recorded, and source-revalidated after all
-  commands. Before and after substantive commands, the retained loader resolves
+  zstd, expat, and Android host libc++ for `zipalign` are copied, recorded, and
+  source-revalidated after all commands. Before and after substantive commands,
+  the retained loader resolves
   every DT_NEEDED dependency for Python, `env`, both aapt2 binaries, avbtool,
   deapexer, OpenSSL, signer Java, and libjvm. Every canonical dependency must be
   a configured runtime source or part of the retained signer JDK, and both
@@ -133,13 +142,23 @@ supplied config pins `audit.py` and `audit.sh` themselves.
 - Retained target-files passes full ZIP CRC/decompression validation, has no
   unsafe or duplicate names, and contains all 14 required paths plus one
   `IMAGES/system.img`. Each required entry is a nonempty regular non-symlink
-  file, and the system image is byte-equal to the publication.
-- Build-info exactly matches independent GSI, Soong, Blueprint, workspace,
-  verifier, patch, build-log, relative `OUT_DIR`, product-output-name, and
-  output-path expectations.
+  file, including all five partner APK paths, and the system image is
+  byte-equal to the publication. Each partner APK is streamed to retained
+  evidence, stably hashed against its independently pinned release digest, and
+  checked for 4-byte and page alignment with retained canonical `zipalign`;
+  its hash must remain unchanged after the alignment check.
+- Build-info exactly matches independent GSI, Soong, Blueprint, vendor/lineage,
+  vendor/partner_gms, workspace, verifier, patch, build-log, relative
+  `OUT_DIR`, product-output-name, and output-path expectations. The
+  vendor/lineage base and prepared identities, retained no-kernel patch and
+  verifier hashes, and resolved `Android TARGET_NO_KERNEL=true` are mandatory.
+  The partner base and prepared identities, retained presigned-APK patch and
+  verifier hashes, and exact `byte preservation=verified` and
+  `alignment=verified` results are also mandatory, but do not replace the
+  auditor's independent target-files hash and alignment checks.
 - The normalized manifest has exactly 1,177 projects, 13 configured prepared
-  custom projects, exact revisions, no local fetch URL, no `vendor/gapps`, and
-  no GSI support project.
+  custom projects, exact revisions including the prepared vendor/partner_gms
+  commit, no local fetch URL, no `vendor/gapps`, and no GSI support project.
 - AVB footer and hashtree verification succeeds and the public-key SHA1 is the
   configured value.
 - TrebleApp has the expected package, all eight patched markers, one configured
