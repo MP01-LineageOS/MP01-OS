@@ -25,14 +25,20 @@ an in-place flash.
    path. The adjacent `<log>.start-epoch` record must contain exactly
    `after_epoch` plus LF. The log must be an absolute, canonical, nonempty
    regular file whose mtime is after both the cutoff and the publication epoch.
-4. Replace any unresolved placeholder values. The auditor rejects them.
-5. Recalculate source, Python-tree, and both Java-tree expectations if a
+4. Pin the independently reviewed input and prepared manifest locks in `paths`,
+   `expected.tool_sha256`, and `expected.build_info`. Set
+   `expected.resolved_manifest_sha256` to the prepared lock's digest. The
+   retained prepared lock, published manifest, and build-info `Prepared source
+   manifest lock SHA256` and `Resolved manifest SHA256` fields must all match
+   it exactly.
+5. Replace any unresolved placeholder values. The auditor rejects them.
+6. Recalculate source, Python-tree, and both Java-tree expectations if a
    pinned input changed.
-6. Set `evidence_dir` to a new absolute strict descendant of `logs_root`.
+7. Set `evidence_dir` to a new absolute strict descendant of `logs_root`.
    Every ancestor must be a real directory, and the evidence path must be
    disjoint from source, output, metadata, target-files, build-log, and tool
    roots.
-7. Run:
+8. Run:
 
    ```sh
    tools/artifact-audit/audit.sh /tmp/mp01-final-audit.json
@@ -44,13 +50,15 @@ Run the focused unit suite from the repository root with:
 /usr/bin/python3.14 -I -S tools/artifact-audit/test_audit.py
 ```
 
-The checked-in example is pinned to the completed c88 audit from build epoch
-`1784126958`. That config is a reproducibility input, not the proof by itself.
-The completed record is the read-only evidence directory
+The checked-in example retains the completed c88 build paths and artifact
+expectations while documenting the successor full-manifest lock contract. It
+must be updated to a build whose build-info contains that contract before use.
+The historical c88 record is the read-only evidence directory
 `/home/user/MP01-LineageOS/logs/mp01-final-c88e03999276-20260715T055915Z-93cb550cc58a-audit`
-and its sibling `.root.sha256` file. The result is
-`PASS_AUDIT_ONLY_NOT_FOR_IN_PLACE_FLASH`. Update and independently revalidate
-the config before using it for another build.
+and its sibling `.root.sha256` file. Its result remains
+`PASS_AUDIT_ONLY_NOT_FOR_IN_PLACE_FLASH`, but it predates the mandatory
+full-manifest digest check and does not satisfy the successor gate. Update and
+independently revalidate the config before using it for another build.
 
 The auditor copies the complete build log and start record, formal-build harness
 and log helper, every publication input, source-policy patch and verifier,
@@ -104,10 +112,14 @@ supplied config pins `audit.py` and `audit.sh` themselves.
 - `signer_aapt2` is the retained Android host tool selected by the original
   signer gate. `treble_aapt2` is the separately pinned SDK tool recorded by
   TrebleApp provenance.
-- The resolved manifest is parsed as XML. Every decoded remote fetch is
-  repeatedly percent-decoded until stable, Unicode-normalized, and checked
-  against explicit network-scheme and safe-relative allowlists. Empty, local,
-  absolute, unlisted relative, and over-nested encodings fail.
+- The exact normalized resolved-manifest bytes must match the independently
+  configured full-manifest SHA256 before XML semantics are accepted. The
+  retained input/prepared locks and their digests, plus the expected and
+  observed publication digests, are recorded in the sealed evidence. Every
+  decoded remote fetch is repeatedly percent-decoded until stable,
+  Unicode-normalized, and checked against explicit network-scheme and
+  safe-relative allowlists. Empty, local, absolute, unlisted relative, and
+  over-nested encodings fail.
 - Java receives explicit `user.home` and `java.io.tmpdir` properties inside the
   evidence directory. The signer verifier receives those paths through its
   direct Java/JAR flags and strips ambient Java option/classpath variables. A
@@ -156,9 +168,11 @@ supplied config pins `audit.py` and `audit.sh` themselves.
   verifier hashes, and exact `byte preservation=verified` and
   `alignment=verified` results are also mandatory, but do not replace the
   auditor's independent target-files hash and alignment checks.
-- The normalized manifest has exactly 1,177 projects, 13 configured prepared
-  custom projects, exact revisions including the prepared vendor/partner_gms
-  commit, no local fetch URL, no `vendor/gapps`, and no GSI support project.
+- The normalized manifest has the configured full-document SHA256, exactly
+  1,177 projects, 13 configured prepared custom projects, exact revisions
+  including the prepared vendor/partner_gms commit, no local fetch URL, no
+  `vendor/gapps`, and no GSI support project. A change to any non-custom
+  project or remote fails the full-document identity check.
 - AVB footer and hashtree verification succeeds and the public-key SHA1 is the
   configured value.
 - TrebleApp has the expected package, all eight patched markers, one configured

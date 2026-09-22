@@ -979,6 +979,40 @@ class EnvironmentAndContractTests(unittest.TestCase):
             config["expected"]["build_log_sha256"],
             "87681b4c33c0d9584cb5067b223c2f92219544dfafd1147017511d49d0f25d3a",
         )
+        self.assertEqual(
+            config["expected"]["resolved_manifest_sha256"],
+            "ece2fc1f579f006f9f7a71f1adcaae836ed27d7b6bceffc0f852b6984f8930a6",
+        )
+        self.assertEqual(
+            config["expected"]["build_info"][
+                "Prepared source manifest lock SHA256"
+            ],
+            config["expected"]["resolved_manifest_sha256"],
+        )
+        self.assertEqual(
+            config["expected"]["build_info"]["Source input manifest lock"],
+            AUDIT.SOURCE_INPUT_MANIFEST_LOCK,
+        )
+        self.assertEqual(
+            config["expected"]["build_info"]["Source input manifest lock SHA256"],
+            "a960a72bee3827697673c64c29ade2d61fa4ce09eeff1af28be8215dee50d5b9",
+        )
+        self.assertEqual(
+            config["expected"]["build_info"]["Prepared source manifest lock"],
+            AUDIT.PREPARED_SOURCE_MANIFEST_LOCK,
+        )
+        self.assertEqual(
+            config["expected"]["tool_sha256"]["source_input_manifest_lock"],
+            config["expected"]["build_info"]["Source input manifest lock SHA256"],
+        )
+        self.assertEqual(
+            config["expected"]["tool_sha256"]["prepared_source_manifest_lock"],
+            config["expected"]["resolved_manifest_sha256"],
+        )
+        self.assertEqual(
+            config["expected"]["build_info"]["Resolved manifest SHA256"],
+            config["expected"]["resolved_manifest_sha256"],
+        )
 
     def test_partner_gms_prepared_manifest_revision_is_enforced(self) -> None:
         config = json.loads(Path(__file__).with_name("config.example.json").read_text())
@@ -1003,14 +1037,167 @@ class EnvironmentAndContractTests(unittest.TestCase):
             AUDIT.ET.ElementTree(root).write(
                 manifest, encoding="utf-8", xml_declaration=True
             )
+            expected["resolved_manifest_sha256"] = AUDIT.sha256_file(manifest)
             AUDIT.verify_manifest(manifest, expected, {})
 
             partner.set("revision", "4b3b48033245800142045ce78038166f8aff6b01")
             AUDIT.ET.ElementTree(root).write(
                 manifest, encoding="utf-8", xml_declaration=True
             )
+            expected["resolved_manifest_sha256"] = AUDIT.sha256_file(manifest)
             with self.assertRaises(AUDIT.AuditError):
                 AUDIT.verify_manifest(manifest, expected, {})
+
+
+class ResolvedManifestIdentityTests(unittest.TestCase):
+    @staticmethod
+    def make_fixture() -> tuple[dict, AUDIT.ET.Element]:
+        config = json.loads(Path(__file__).with_name("config.example.json").read_text())
+        expected = copy.deepcopy(config["expected"])
+        expected["project_count"] = len(expected["custom_projects"]) + 1
+
+        root = AUDIT.ET.Element("manifest")
+        AUDIT.ET.SubElement(
+            root,
+            "remote",
+            name="aosp",
+            fetch="https://android.googlesource.com/",
+        )
+        AUDIT.ET.SubElement(
+            root,
+            "remote",
+            name="mp01-local",
+            fetch=expected["mp01_local_fetch"],
+        )
+        for project in expected["custom_projects"]:
+            AUDIT.ET.SubElement(root, "project", **project, remote="mp01-local")
+        AUDIT.ET.SubElement(
+            root,
+            "project",
+            name="platform/frameworks/base",
+            path="frameworks/base",
+            revision="1" * 40,
+            remote="aosp",
+        )
+        return expected, root
+
+    @staticmethod
+    def write_manifest(root: AUDIT.ET.Element, path: Path) -> str:
+        AUDIT.ET.ElementTree(root).write(
+            path, encoding="utf-8", xml_declaration=True
+        )
+        return AUDIT.sha256_file(path)
+
+    @staticmethod
+    def non_custom_project(root: AUDIT.ET.Element) -> AUDIT.ET.Element:
+        return next(
+            project
+            for project in root.findall("./project")
+            if project.get("path") == "frameworks/base"
+        )
+
+    @staticmethod
+    def aosp_remote(root: AUDIT.ET.Element) -> AUDIT.ET.Element:
+        return next(
+            remote
+            for remote in root.findall("./remote")
+            if remote.get("name") == "aosp"
+        )
+
+    def test_exact_full_manifest_digest_is_required_and_recorded(self) -> None:
+        expected, root = self.make_fixture()
+        with tempfile.TemporaryDirectory(dir="/tmp") as temporary:
+            manifest = Path(temporary) / "manifest.xml"
+            digest = self.write_manifest(root, manifest)
+            expected["resolved_manifest_sha256"] = digest
+            result: dict = {}
+
+            AUDIT.verify_manifest(manifest, expected, result)
+
+            self.assertEqual(result["resolved_manifest_expected_sha256"], digest)
+            self.assertEqual(result["resolved_manifest_sha256"], digest)
+
+            for bad_value in (None, "0" * 63, "A" * 64):
+                invalid = copy.deepcopy(expected)
+                if bad_value is None:
+                    del invalid["resolved_manifest_sha256"]
+                else:
+                    invalid["resolved_manifest_sha256"] = bad_value
+                with self.subTest(bad_value=bad_value), self.assertRaises(
+                    AUDIT.AuditError
+                ):
+                    AUDIT.verify_manifest(manifest, invalid, {})
+
+    def test_all_non_custom_project_and_remote_mutations_fail_digest(self) -> None:
+        expected, original = self.make_fixture()
+        with tempfile.TemporaryDirectory(dir="/tmp") as temporary:
+            manifest = Path(temporary) / "manifest.xml"
+            expected["resolved_manifest_sha256"] = self.write_manifest(
+                original, manifest
+            )
+            AUDIT.verify_manifest(manifest, expected, {})
+
+            def add_project(root: AUDIT.ET.Element) -> None:
+                AUDIT.ET.SubElement(
+                    root,
+                    "project",
+                    name="platform/packages/apps/Settings",
+                    path="packages/apps/Settings",
+                    revision="2" * 40,
+                    remote="aosp",
+                )
+
+            def remove_project(root: AUDIT.ET.Element) -> None:
+                root.remove(self.non_custom_project(root))
+
+            mutations = (
+                (
+                    "non-custom revision",
+                    lambda root: self.non_custom_project(root).set(
+                        "revision", "2" * 40
+                    ),
+                ),
+                (
+                    "non-custom name",
+                    lambda root: self.non_custom_project(root).set(
+                        "name", "platform/frameworks/base-substituted"
+                    ),
+                ),
+                (
+                    "non-custom path",
+                    lambda root: self.non_custom_project(root).set(
+                        "path", "frameworks/base-substituted"
+                    ),
+                ),
+                (
+                    "non-custom remote association",
+                    lambda root: self.non_custom_project(root).set(
+                        "remote", "mp01-local"
+                    ),
+                ),
+                (
+                    "remote name",
+                    lambda root: self.aosp_remote(root).set(
+                        "name", "aosp-substituted"
+                    ),
+                ),
+                (
+                    "remote fetch",
+                    lambda root: self.aosp_remote(root).set(
+                        "fetch", "https://example.com/"
+                    ),
+                ),
+                ("project added", add_project),
+                ("project removed", remove_project),
+            )
+            for label, mutate in mutations:
+                changed = copy.deepcopy(original)
+                mutate(changed)
+                self.write_manifest(changed, manifest)
+                with self.subTest(label=label), self.assertRaisesRegex(
+                    AUDIT.AuditError, "resolved manifest SHA256 mismatch"
+                ):
+                    AUDIT.verify_manifest(manifest, expected, {})
 
 
 class BuildInfoContractTests(unittest.TestCase):

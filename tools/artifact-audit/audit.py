@@ -73,6 +73,8 @@ BUILD_LOG_RELEASE_SIGNING_LINE = (
 BUILD_LOG_RECOGNIZED_SIGNING_LINES = frozenset(
     (BUILD_LOG_SIGNING_LINE, BUILD_LOG_RELEASE_SIGNING_LINE)
 )
+SOURCE_INPUT_MANIFEST_LOCK = "source-locks/lineage-23.2-microg-input.xml"
+PREPARED_SOURCE_MANIFEST_LOCK = "source-locks/lineage-23.2-microg-prepared.xml"
 
 REQUIRED_TARGET_FILES = (
     "SYSTEM/priv-app/TrebleApp/TrebleApp.apk",
@@ -181,6 +183,11 @@ MANDATORY_BUILD_INFO_KEYS = (
     "Build lock path",
     "Publication lock path",
     "Build log",
+    "Source input manifest lock",
+    "Source input manifest lock SHA256",
+    "Prepared source manifest lock",
+    "Prepared source manifest lock SHA256",
+    "Resolved manifest SHA256",
 )
 
 REQUIRED_PATH_KEYS = {
@@ -231,6 +238,8 @@ REQUIRED_PATH_KEYS = {
     "partner_zipalign",
     "formal_build_harness",
     "formal_build_log_helper",
+    "source_input_manifest_lock",
+    "prepared_source_manifest_lock",
 }
 
 EVIDENCE_BASE_KEYS = (
@@ -1798,6 +1807,16 @@ def reject_local_remote_fetch(
 
 def verify_manifest(manifest_path: Path, expected: dict, result: dict) -> None:
     raw = manifest_path.read_bytes()
+    expected_sha256 = require_digest(
+        string_cfg(expected, "resolved_manifest_sha256"),
+        SHA256_RE,
+        "resolved manifest",
+    )
+    actual_sha256 = hashlib.sha256(raw).hexdigest()
+    require(
+        actual_sha256 == expected_sha256,
+        "resolved manifest SHA256 mismatch",
+    )
     require(b"<!doctype" not in raw.lower(), "resolved manifest must not contain a DOCTYPE")
     try:
         root = ET.fromstring(raw)
@@ -1872,7 +1891,8 @@ def verify_manifest(manifest_path: Path, expected: dict, result: dict) -> None:
     require(len(local_remotes) == remote_count, "mp01-local remote count mismatch")
     expected_fetch = string_cfg(expected, "mp01_local_fetch")
     require(all(remote.get("fetch") == expected_fetch for remote in local_remotes), "mp01-local fetch mismatch")
-    result["resolved_manifest_sha256"] = hashlib.sha256(raw).hexdigest()
+    result["resolved_manifest_expected_sha256"] = expected_sha256
+    result["resolved_manifest_sha256"] = actual_sha256
     result["resolved_manifest_project_count"] = len(projects)
     result["resolved_manifest_custom_project_count"] = len(custom)
 
@@ -2500,6 +2520,8 @@ def audit(config_path: Path) -> tuple[dict, Path, Path]:
             "partner_zipalign": evidence_dir / "tools" / "otatools" / "bin" / "zipalign",
             "formal_build_harness": evidence_dir / "tools" / "run-formal-build.sh",
             "formal_build_log_helper": evidence_dir / "tools" / "formal-build-log.py",
+            "source_input_manifest_lock": evidence_dir / "inputs" / "source-input-manifest.xml",
+            "prepared_source_manifest_lock": evidence_dir / "inputs" / "prepared-source-manifest.xml",
         }
         for destination in tool_destinations.values():
             destination.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -2819,6 +2841,19 @@ def audit(config_path: Path) -> tuple[dict, Path, Path]:
         result["required_target_files_entries"] = len(REQUIRED_TARGET_FILES)
         result["target_files_system_image_sha256"] = target_image_sha
 
+        verify_manifest(publication["manifest"], expected, result)
+        result["source_input_manifest_lock_sha256"] = result["tool_sha256"][
+            "source_input_manifest_lock"
+        ]
+        result["prepared_source_manifest_lock_sha256"] = result["tool_sha256"][
+            "prepared_source_manifest_lock"
+        ]
+        require(
+            result["prepared_source_manifest_lock_sha256"]
+            == result["resolved_manifest_expected_sha256"],
+            "prepared source manifest lock differs from expected resolved manifest",
+        )
+
         build_info_text = read_lf_text(publication["build_info"], "retained build-info")
         require(
             build_info_text.splitlines()[0] == "MP01 LineageOS 23.2 microG unsigned test build",
@@ -2854,6 +2889,15 @@ def audit(config_path: Path) -> tuple[dict, Path, Path]:
             "Signer compatibility expected manifest": source_paths["signer_manifest"].name,
             "Signer compatibility expected manifest SHA256": signer_manifest_sha,
             "Resolved manifest": str(publication_sources["manifest"]),
+            "Source input manifest lock": SOURCE_INPUT_MANIFEST_LOCK,
+            "Source input manifest lock SHA256": result[
+                "source_input_manifest_lock_sha256"
+            ],
+            "Prepared source manifest lock": PREPARED_SOURCE_MANIFEST_LOCK,
+            "Prepared source manifest lock SHA256": result[
+                "prepared_source_manifest_lock_sha256"
+            ],
+            "Resolved manifest SHA256": result["resolved_manifest_sha256"],
             "Android host output": str(android_host_out),
             "Android JDK home": str(java_home_source),
             "TrebleApp APK signer Java": str(signer_java_source),
@@ -2905,8 +2949,6 @@ def audit(config_path: Path) -> tuple[dict, Path, Path]:
         result["partner_apk_alignment"] = "verified"
         result["build_info_sha256"] = sha256_file(publication["build_info"])
         result["build_info_expectation_count"] = len(build_expectations)
-
-        verify_manifest(publication["manifest"], expected, result)
 
         avb_info = run_command(
             evidence_dir,
