@@ -95,9 +95,12 @@ validation or installation authorization has passed.
    snapshot endpoints and base-image digest are prepared; the image has not
    been built or tested because no runtime is installed. Dependency resolution
    and full source/prepared-graph verification still need a real container run.
-3. Connect the MP01 over USB and authorize the existing Android SDK's adb.
-   The retained SDK executable works, but `adb devices -l` currently lists no
-   device. Identify the serial and capture the fresh contract as shown below.
+3. Later, attach the MP01 to a dedicated device-test/flashing qube and
+   authorize adb there. No phone needs to be attached to the development qube
+   or flashed immediately after a build. Identify the serial and capture the
+   fresh, read-only device contract before making vendor compatibility or
+   partition decisions, as described below. The retained SDK executable works
+   in this qube, but `adb devices -l` currently lists no device.
 4. Have qadmin correct the qpublish outbox lock ownership/mode problem.
    `qpublish workspace-status` fails with `outbox lock has unsafe ownership or
    mode`. Do not change its permissions here or bypass the broker. The registry
@@ -129,7 +132,9 @@ row remain untested.
 
 ## Fresh device capture
 
-Use the serial printed for the MP01, never an inferred first attached device:
+Use the serial printed for the MP01, never an inferred first attached device.
+The following paths assume a checkout and adb installation in the qube where
+the MP01 is attached; adjust only those paths for the dedicated test qube:
 
 ```bash
 cd /home/user/MP01-LineageOS
@@ -146,6 +151,29 @@ Unavailable commands and denied reads are retained as gaps. Raw evidence is
 private (directory mode 0700, files 0600); only reviewed summaries belong in Git.
 If vendor identity differs, inspect it manually and review the identity rule;
 do not add a generic MediaTek or arm64 bypass.
+
+Keep source edits, Android builds and build caches in this development qube,
+with Debian 12 inside its pinned container. Keep private release keys in the
+separate signing environment. The dedicated MP01 test/flashing qube can remain
+offline except for the [manually attached MP01 through `sys-usb`](https://doc.qubes-os.org/en/r4.3/user/how-to-guides/how-to-use-usb-devices.html).
+Run read-only device capture there and use [Qubes inter-qube file copy](https://doc.qubes-os.org/en/r4.3/user/how-to-guides/how-to-copy-and-move-files.html)
+to transfer its private inventory back to development;
+record the source qube, MP01 serial, capture time and file hashes. This is
+device evidence, not authorization to flash. The phone need not be connected
+until this inventory is needed, and the first installation can wait after the
+image is built.
+
+When signed release packaging exists, transfer the complete signed and audited
+bundle to the test/flashing qube, not a bare `system.img`. Verify its
+authenticated checksums against trusted public project verification material
+provisioned independently of the copied bundle. Verify the source/provenance
+record, signer inventory, required vendor baseline and intended installation
+profile there before any partition operation. A file copy alone proves neither
+authenticity nor device compatibility. The exact partition/recovery contract
+and USB executor are still unimplemented, so there is no flash-ready bundle or
+procedure yet. Ordinary updates must preserve userdata and metadata; a clean
+install/data wipe, if one proves necessary, needs explicit confirmation for
+that particular flashing session.
 
 Review firmware/kernel versions, bootloader state, ABI/binder, partitions and
 fstab, VNDK/VINTF, encryption and keystore services, and the resolved light/e-ink
