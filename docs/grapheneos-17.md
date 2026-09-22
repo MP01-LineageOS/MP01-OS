@@ -1,10 +1,13 @@
 # MP01 GrapheneOS 17 implementation state
 
-Status: source/build tooling implemented and tested locally; the pinned Android
-source sync is **underway** in the Debian 12 container. Full compilation remains
-blocked by the current RAM allocation and a missing MP01 device inventory.
-There is no prepared-source receipt yet, new image, signed release or hardware
-compatibility claim. Android 17 remains the selected base.
+Status: the pinned GrapheneOS 17 source sync and preparation completed
+in the Debian 12 container. All 1,057 exact-revision projects, two locked
+patches and 157 imported MP01 files are recorded in
+`.android-build/grapheneos-17-state/prepared-20260922T221613137801Z.json`
+at support commit `1927125`. Offline
+`verify-source` passed. Full compilation remains blocked by the current RAM
+allocation; the fresh MP01 device inventory is also outstanding. There is no
+new image, signed release or hardware compatibility claim.
 
 The Pixel 8a stays the daily phone. The operator describes the MP01 as empty and
 available for connection later. The primary cellular test is **AT&T in the
@@ -68,9 +71,11 @@ downloaded from GrapheneOS over HTTPS, pinned as
 `344f59c6f058699e63fea68e35953b341c14e3bf1fbc1256f6baa84aa2aca1d0`.
 Only that upstream public material was used; no operator SSH credentials or
 private release signing material was accessed.
-The single product-scoped patch excludes Auditor on MP01 while retaining it on
-other products. Its exact resulting commit was independently reproduced by
-applying the patch to the pinned upstream build repository. RestlessOS commit
+Two product-scoped patches are locked and applied: Auditor is excluded on MP01
+while remaining on other products, and inkOS becomes the HOME fallback after
+per-user setup only when the user has not already selected a HOME app. Their
+exact resulting commits were checked against the pinned upstream projects.
+RestlessOS commit
 `d7755a60d2d3f17a64cbe267574c83d6af4e1b2b` remains a reference; no compatibility
 patch stack was copied wholesale. The kernel and vendor firmware are retained.
 See [upstream build guidance](https://grapheneos.org/build) and the
@@ -90,17 +95,19 @@ validation or installation authorization has passed.
    7.7 GiB allocated and about 6 GiB available. Earlier Xen ballooning had
    reduced the observed allocation to approximately 3.1 GiB; the configured
    maximum cannot be established from guest observations. Builds require
-   32 GiB allocated and 28 GiB available, with a four-job cap; prefer a 48 GiB
-   maximum/allocation to allow guest overhead. Swap does not satisfy this gate.
+   32 GiB allocated and 28 GiB available, with a four-job cap. The operator
+   expects expansion toward 40 GiB and can increase it if the measured
+   available memory remains below the gate. Swap does not satisfy this gate.
 2. Rootless Podman 5.8.4 is available. **Fedora stays the host; Debian 12 runs
    inside the container.** The digest-pinned image built successfully after the
-   Debian snapshot recipe enabled `contrib` for the `repo` launcher. The
-   container source-sync preflight passed. Rootless source sync uses
-   `slirp4netns`; verification and builds use no network. The sync is running
-   against the pinned 1,057-project graph, with no completion claim or prepared
-   receipt yet. Its monitored free-space floor is 240 GiB. The original
-   429.8 GiB post-cleanup free-space measurement above is historical; about
-   329 GiB remained during the active sync on 2026-09-22.
+   Debian snapshot recipe enabled `contrib` for the `repo` launcher. Rootless
+   source sync uses `slirp4netns`; offline preparation, verification and builds
+   use no network. The pinned 1,057-project sync completed, and the source
+   receipt above passed offline verification. An interrupted full-history fetch
+   was resumed with guarded shallow fetches of the exact locked revisions;
+   completed projects were retained. The source monitor kept a 240 GiB
+   free-space floor. The original 429.8 GiB post-cleanup measurement above is
+   historical; approximately 261 GiB was free at the latest build preflight.
 3. Later, attach the MP01 to a dedicated device-test/flashing qube and
    authorize adb there. No phone needs to be attached to the development qube
    or flashed immediately after a build. Identify the serial and capture the
@@ -115,14 +122,16 @@ validation or installation authorization has passed.
    staging; a local branch name is not that authorization. Nothing was staged
    or pushed during this implementation.
 
-The source-sync disk budget passed after cleanup and continues to account for
-bytes already allocated by the incomplete pinned checkout when resuming. The
-actual build preflight still rejects the present RAM allocation. No memory
-stress allocation was used to force balloon growth.
+The build disk preflight passes at approximately 261 GiB free against its
+240 GiB minimum. The RAM gate still rejects the present approximately 7.7 GiB
+allocated and 6.3 GiB available against its 32 GiB allocated and 28 GiB
+available minimums. The operator expects the qube to expand toward 40 GiB;
+that capacity has not yet appeared inside the guest. Swap does not satisfy the
+RAM gate. No memory stress allocation was used to force balloon growth.
 
 ## Verification completed
 
-**127 Python host tests passed:** 49 retained artifact-auditor, six preserved
+The earlier **127 Python host tests passed:** 49 retained artifact-auditor, six preserved
 source-lock, 37 existing signer-inventory, 17 new build/source/transcript, 14 new
 signer-profile and four device-selection tests. The new transcript tests cover
 nonzero build exit, failed log fsync, exhausted disk reserve and failed resource
@@ -130,15 +139,15 @@ monitoring. The existing native e-ink command-stream tests also compiled with
 warnings treated as errors and passed.
 
 Additional checks passed for container-shell syntax, signed upstream manifest
-verification, exact compatibility-patch commit reproduction and GNU Make
-package selection for both `mp01` and `husky`. The device collector failed
-cleanly with a disconnected serial and created no inventory directory. The
-container runner's earlier refusal to start without Podman was superseded by
-a successful pinned image build and container source-sync preflight. Focused
-builder tests passed after enabling Debian `contrib`, rootless `slirp4netns`,
-tag-limited source fetches and resume-aware disk accounting. These are
-host/tooling and container dependency results; source sync, Android compilation
-and every device acceptance row remain unverified.
+verification, exact patch-result commit reproduction and GNU Make package
+selection for both `mp01` and `husky`. The device collector failed cleanly
+with a disconnected serial and created no inventory directory. The pinned
+container source sync and offline `verify-source` passed, with 1,057 locked
+projects, two applied patches and 157 imported MP01 files recorded in the
+receipt. Focused builder tests passed after enabling Debian `contrib`, rootless
+`slirp4netns`, bounded shallow source fetches and resume-aware disk accounting.
+These checks establish source preparation, not Android compilation or any
+device acceptance row.
 
 ## Fresh device capture
 
@@ -200,7 +209,7 @@ debugfs denial in compiled production policy and on-device.
 
 ## Installation and release work still to do
 
-Complete real source sync/build and the device compatibility work first. Stop
+Complete the first full build and device compatibility work first. Stop
 with a reproducible Android 17 incompatibility report if the vendor stack
 cannot satisfy release requirements; do not weaken compatibility checks or
 silently downgrade. Record every hardening exception with component, failure,
