@@ -1,5 +1,10 @@
 # Current State
 
+**Superseded for active development on 21 September 2026:** see
+[the GrapheneOS 17 implementation state](grapheneos-17.md). This document
+preserves the historical LineageOS audit; its in-use-phone assumptions and
+priorities do not replace the new empty-MP01 development plan.
+
 This captures the project state as of July 15, 2026. The known source,
 Android-output, and presigned-partner-APK blockers are fixed. The formal build
 from GSI head `c88e039992760ada12f1df874453c2243d784862` and its independent

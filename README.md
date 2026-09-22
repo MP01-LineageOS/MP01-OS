@@ -1,4 +1,10 @@
-# MP01 LineageOS
+# MP01 OS
+
+New development targets an MP01-specific GrapheneOS 17 derivative. See the
+[implementation status](docs/grapheneos-17.md) and
+[acceptance and phone handoff checklist](docs/grapheneos-17-acceptance.md).
+No GrapheneOS-based image has been built or flashed. The LineageOS state below
+is retained as source history and recovery evidence.
 
 This organization continues the Minimal Phone MP01 LineageOS/Treble GSI work
 started in `MP01Experiments`.
