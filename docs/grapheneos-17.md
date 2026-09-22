@@ -1,9 +1,10 @@
 # MP01 GrapheneOS 17 implementation state
 
-Status: source/build tooling implemented and tested locally; Android source
-sync, full compilation, device inventory and boot validation are **blocked by
-builder/device prerequisites**. There is no new image, signed release or
-hardware compatibility claim. Android 17 remains the selected base.
+Status: source/build tooling implemented and tested locally; the pinned Android
+source sync is **underway** in the Debian 12 container. Full compilation remains
+blocked by the current RAM allocation and a missing MP01 device inventory.
+There is no prepared-source receipt yet, new image, signed release or hardware
+compatibility claim. Android 17 remains the selected base.
 
 The Pixel 8a stays the daily phone. The operator describes the MP01 as empty and
 available for connection later. The primary cellular test is **AT&T in the
@@ -85,16 +86,21 @@ validation or installation authorization has passed.
 
 ## Current prerequisites
 
-1. Allocate sufficient RAM to this qube: the guest reported 7.7 GiB initially,
-   then approximately 3.1 GiB as Xen ballooning adjusted it. Its configured
-   maximum cannot be established from these guest observations. Builds require
+1. Allocate sufficient RAM to this qube: on 2026-09-22 the guest reported
+   7.7 GiB allocated and about 6 GiB available. Earlier Xen ballooning had
+   reduced the observed allocation to approximately 3.1 GiB; the configured
+   maximum cannot be established from guest observations. Builds require
    32 GiB allocated and 28 GiB available, with a four-job cap; prefer a 48 GiB
    maximum/allocation to allow guest overhead. Swap does not satisfy this gate.
-2. Provision rootless Podman through normal qube administration. **Fedora stays
-   the host; Debian 12 runs inside the container.** The pinned recipe, package
-   snapshot endpoints and base-image digest are prepared; the image has not
-   been built or tested because no runtime is installed. Dependency resolution
-   and full source/prepared-graph verification still need a real container run.
+2. Rootless Podman 5.8.4 is available. **Fedora stays the host; Debian 12 runs
+   inside the container.** The digest-pinned image built successfully after the
+   Debian snapshot recipe enabled `contrib` for the `repo` launcher. The
+   container source-sync preflight passed. Rootless source sync uses
+   `slirp4netns`; verification and builds use no network. The sync is running
+   against the pinned 1,057-project graph, with no completion claim or prepared
+   receipt yet. Its monitored free-space floor is 240 GiB. The original
+   429.8 GiB post-cleanup free-space measurement above is historical; about
+   329 GiB remained during the active sync on 2026-09-22.
 3. Later, attach the MP01 to a dedicated device-test/flashing qube and
    authorize adb there. No phone needs to be attached to the development qube
    or flashed immediately after a build. Identify the serial and capture the
@@ -109,9 +115,10 @@ validation or installation authorization has passed.
    staging; a local branch name is not that authorization. Nothing was staged
    or pushed during this implementation.
 
-The source-sync disk budget passes after cleanup. The actual build preflight
-correctly rejects the present RAM allocation and missing container identity.
-No memory stress allocation was used to force balloon growth.
+The source-sync disk budget passed after cleanup and continues to account for
+bytes already allocated by the incomplete pinned checkout when resuming. The
+actual build preflight still rejects the present RAM allocation. No memory
+stress allocation was used to force balloon growth.
 
 ## Verification completed
 
@@ -126,9 +133,12 @@ Additional checks passed for container-shell syntax, signed upstream manifest
 verification, exact compatibility-patch commit reproduction and GNU Make
 package selection for both `mp01` and `husky`. The device collector failed
 cleanly with a disconnected serial and created no inventory directory. The
-container runner refused to start without Podman. These are host/tooling
-results; container execution, Android compilation and every device acceptance
-row remain untested.
+container runner's earlier refusal to start without Podman was superseded by
+a successful pinned image build and container source-sync preflight. Focused
+builder tests passed after enabling Debian `contrib`, rootless `slirp4netns`,
+tag-limited source fetches and resume-aware disk accounting. These are
+host/tooling and container dependency results; source sync, Android compilation
+and every device acceptance row remain unverified.
 
 ## Fresh device capture
 
