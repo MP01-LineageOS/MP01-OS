@@ -121,7 +121,10 @@ validation or installation authorization has passed.
    in this qube, but `adb devices -l` currently lists no device.
 4. Have qadmin correct the qpublish outbox lock ownership/mode problem.
    `qpublish workspace-status` fails with `outbox lock has unsafe ownership or
-   mode`. Do not change its permissions here or bypass the broker. The registry
+   mode`. Read-only inspection found
+   `~/.local/share/qpublish/outbox/.stage.lock` is a regular file owned by
+   `user:user` but mode `0644`; qpublish requires no group/other permission
+   bits. Do not change its permissions here or bypass the broker. The registry
    still assigns `MP01-LineageGSI` to target `15`, and `MP01-OS` to `main`.
    qadmin must authorize any intended `grapheneos-17` publication target before
    staging; a local branch name is not that authorization. Nothing was staged
