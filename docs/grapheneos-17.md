@@ -92,12 +92,17 @@ validation or installation authorization has passed.
 ## Current prerequisites
 
 1. Allocate sufficient RAM to this qube: on 2026-09-22 the guest reported
-   7.7 GiB allocated and about 6 GiB available. Earlier Xen ballooning had
-   reduced the observed allocation to approximately 3.1 GiB; the configured
-   maximum cannot be established from guest observations. Builds require
-   32 GiB allocated and 28 GiB available, with a four-job cap. The operator
-   expects expansion toward 40 GiB and can increase it if the measured
-   available memory remains below the gate. Swap does not satisfy this gate.
+   7.7 GiB allocated and about 6.3 GiB available. The running qube's Xen
+   `memory/static-max` is 8 GiB (`8388608` KiB), and no `hotplug-max` is
+   present. The intended 40 GiB maximum is not effective in the running guest;
+   halt and restart the qube after setting it, then remeasure.
+   Qubes' maximum is only a ceiling for memory balancing. If the restarted
+   qube still has less than 32 GiB allocated or 28 GiB available, its initial
+   `memory` setting must be raised through qube administration. The operator
+   can change only the maximum, so this may require qadmin. Builds keep a
+   four-job cap. Swap does not satisfy the RAM gate. See Qubes' definitions of
+   [`memory` and `maxmem`](https://doc.qubes-os.org/projects/core-admin-client/en/release4.2/manpages/qvm-prefs.html)
+   and its [memory-balancer behavior](https://doc.qubes-os.org/en/latest/developer/services/qmemman.html).
 2. Rootless Podman 5.8.4 is available. **Fedora stays the host; Debian 12 runs
    inside the container.** The digest-pinned image built successfully after the
    Debian snapshot recipe enabled `contrib` for the `repo` launcher. Rootless
@@ -125,9 +130,10 @@ validation or installation authorization has passed.
 The build disk preflight passes at approximately 261 GiB free against its
 240 GiB minimum. The RAM gate still rejects the present approximately 7.7 GiB
 allocated and 6.3 GiB available against its 32 GiB allocated and 28 GiB
-available minimums. The operator expects the qube to expand toward 40 GiB;
-that capacity has not yet appeared inside the guest. Swap does not satisfy the
-RAM gate. No memory stress allocation was used to force balloon growth.
+available minimums. The running Xen ceiling is 8 GiB. Recheck it after the
+maximum-setting change and restart; the maximum by itself does not guarantee
+enough initial allocation. Swap does not satisfy the RAM gate. No memory stress
+allocation was used to force balloon growth.
 
 ## Verification completed
 
