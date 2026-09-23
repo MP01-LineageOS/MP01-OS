@@ -105,15 +105,15 @@ fixes were included in the refreshed source receipt above.
 
 ## Current prerequisites
 
-1. Allocate sufficient RAM to this qube: on 2026-09-22 the guest reported
-   7.7 GiB allocated and about 6.3 GiB available. The running qube's Xen
-   `memory/static-max` is 8 GiB (`8388608` KiB), and no `hotplug-max` is
-   present. The intended 40 GiB maximum is not effective in the running guest;
-   halt and restart the qube after setting it, then remeasure.
-   Qubes' maximum is only a ceiling for memory balancing. If the restarted
-   qube still has less than 32 GiB allocated or 28 GiB available, its initial
-   `memory` setting must be raised through qube administration. The operator
-   can change only the maximum, so this may require qadmin. Builds keep a
+1. Allocate sufficient RAM to this qube: after the operator restarted `MP01`
+   on 2026-09-23, the guest reported about 3.1 GiB allocated and 2.2 GiB
+   available. Xen `memory/static-max` remains 8 GiB (`8388608` KiB), with no
+   `hotplug-max`. The earlier 40 GiB intended maximum is still not effective
+   for this qube; qadmin needs to inspect its persisted `maxmem` setting.
+   Qubes' maximum is only a ceiling for memory balancing. Qadmin must arrange
+   at least 32 GiB currently allocated and 28 GiB available, potentially by
+   raising initial `memory` or using a fixed allocation if balancing shrinks
+   the guest again. The operator can change only the maximum. Builds keep a
    four-job cap. Swap does not satisfy the RAM gate. See Qubes' definitions of
    [`memory` and `maxmem`](https://doc.qubes-os.org/projects/core-admin-client/en/release4.2/manpages/qvm-prefs.html)
    and its [memory-balancer behavior](https://doc.qubes-os.org/en/latest/developer/services/qmemman.html).
@@ -145,12 +145,13 @@ fixes were included in the refreshed source receipt above.
    or pushed during this implementation.
 
 The build disk preflight passes at approximately 261 GiB free against its
-240 GiB minimum. The RAM gate still rejects the present approximately 7.7 GiB
-allocated and 6.3 GiB available against its 32 GiB allocated and 28 GiB
-available minimums. The running Xen ceiling is 8 GiB. Recheck it after the
-maximum-setting change and restart; the maximum by itself does not guarantee
-enough initial allocation. Swap does not satisfy the RAM gate. No memory stress
-allocation was used to force balloon growth.
+240 GiB minimum. After restart, the RAM gate rejects approximately 3.1 GiB
+allocated and 2.2 GiB available against its 32 GiB allocated and 28 GiB
+available minimums. The running Xen ceiling remains 8 GiB, so the intended
+maximum did not take effect across this restart. Even after qadmin corrects the
+ceiling, the maximum by itself does not guarantee enough initial allocation.
+Swap does not satisfy the RAM gate. No memory stress allocation was used to
+force balloon growth.
 
 ## Verification completed
 
