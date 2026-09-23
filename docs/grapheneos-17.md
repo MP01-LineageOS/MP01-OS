@@ -2,10 +2,11 @@
 
 Status: the pinned GrapheneOS 17 source sync and preparation completed
 in the Debian 12 container. All 1,057 exact-revision projects, two locked
-patches and 157 imported MP01 files are recorded in
-`.android-build/grapheneos-17-state/prepared-20260922T221613137801Z.json`
-at support commit `1927125`. Offline
-`verify-source` passed. Full compilation remains blocked by the current RAM
+patches and 159 imported MP01 files are recorded in
+`.android-build/grapheneos-17-state/prepared-20260923T013625956834Z.json`
+(SHA256 `f8c2389b15dbb3a10532661b9f043b9a833c8fe1b516e1bad54889763c8232b1`)
+at support commit `31e70f2`. Offline `verify-source` passed. The earlier
+receipt remains preserved. Full compilation remains blocked by the current RAM
 allocation; the fresh MP01 device inventory is also outstanding. There is no
 new image, signed release or hardware compatibility claim.
 
@@ -89,6 +90,19 @@ baseline. Presigned upstream packages require exact byte hashes. Passing this
 signer gate does **not** mean full artifact audit, AVB verification, hardware
 validation or installation authorization has passed.
 
+An additional audit-only AVB gate checks a returned signed `system.img` against
+independently authenticated image, project public-key and pinned avbtool hashes.
+It requires a signed system hashtree, verifies it with avbtool and rejects
+bundled AOSP test keys. Its report cannot authorize flashing. Whole-bundle
+vbmeta chain, image-to-target-files consistency and device boot-chain trust
+remain unverified.
+
+The MP01 accessibility default now enables the service only during initial
+setup, so a later user choice to disable it survives reboot or app replacement. The
+legacy `clean_a2` and `anti_flicker` commands accept only `0` or `1` pending
+device evidence; they are still blocked by production SELinux policy. These
+fixes were included in the refreshed source receipt above.
+
 ## Current prerequisites
 
 1. Allocate sufficient RAM to this qube: on 2026-09-22 the guest reported
@@ -152,11 +166,17 @@ verification, exact patch-result commit reproduction and GNU Make package
 selection for both `mp01` and `husky`. The device collector failed cleanly
 with a disconnected serial and created no inventory directory. The pinned
 container source sync and offline `verify-source` passed, with 1,057 locked
-projects, two applied patches and 157 imported MP01 files recorded in the
+projects, two applied patches and 159 imported MP01 files recorded in the
 receipt. Focused builder tests passed after enabling Debian `contrib`, rootless
 `slirp4netns`, bounded shallow source fetches and resume-aware disk accounting.
 These checks establish source preparation, not Android compilation or any
 device acceptance row.
+
+After the source-side corrections, five AVB gate tests using real pinned
+avbtool fixtures and three accessibility-default policy tests passed. The
+boot receiver compiled against the local Android API with app-type stubs,
+native daemon dispatch tests passed with warnings treated as errors, and
+manifest XML parsing passed. The new receipt passed offline source verification.
 
 ## Fresh device capture
 
