@@ -1,9 +1,14 @@
 # MP01 GrapheneOS 17 implementation state
 
-Status: source/build tooling implemented and tested locally; Android source
-sync, full compilation, device inventory and boot validation are **blocked by
-builder/device prerequisites**. There is no new image, signed release or
-hardware compatibility claim. Android 17 remains the selected base.
+Status: the pinned GrapheneOS 17 source sync and preparation completed
+in the Debian 12 container. All 1,057 exact-revision projects, two locked
+patches and 159 imported MP01 files are recorded in
+`.android-build/grapheneos-17-state/prepared-20260923T013625956834Z.json`
+(SHA256 `f8c2389b15dbb3a10532661b9f043b9a833c8fe1b516e1bad54889763c8232b1`)
+at support commit `31e70f2`. Offline `verify-source` passed. The earlier
+receipt remains preserved. Full compilation remains blocked by the current RAM
+allocation; the fresh MP01 device inventory is also outstanding. There is no
+new image, signed release or hardware compatibility claim.
 
 The Pixel 8a stays the daily phone. The operator describes the MP01 as empty and
 available for connection later. The primary cellular test is **AT&T in the
@@ -67,9 +72,11 @@ downloaded from GrapheneOS over HTTPS, pinned as
 `344f59c6f058699e63fea68e35953b341c14e3bf1fbc1256f6baa84aa2aca1d0`.
 Only that upstream public material was used; no operator SSH credentials or
 private release signing material was accessed.
-The single product-scoped patch excludes Auditor on MP01 while retaining it on
-other products. Its exact resulting commit was independently reproduced by
-applying the patch to the pinned upstream build repository. RestlessOS commit
+Two product-scoped patches are locked and applied: Auditor is excluded on MP01
+while remaining on other products, and inkOS becomes the HOME fallback after
+per-user setup only when the user has not already selected a HOME app. Their
+exact resulting commits were checked against the pinned upstream projects.
+RestlessOS commit
 `d7755a60d2d3f17a64cbe267574c83d6af4e1b2b` remains a reference; no compatibility
 patch stack was copied wholesale. The kernel and vendor firmware are retained.
 See [upstream build guidance](https://grapheneos.org/build) and the
@@ -83,36 +90,69 @@ baseline. Presigned upstream packages require exact byte hashes. Passing this
 signer gate does **not** mean full artifact audit, AVB verification, hardware
 validation or installation authorization has passed.
 
+An additional audit-only AVB gate checks a returned signed `system.img` against
+independently authenticated image, project public-key and pinned avbtool hashes.
+It requires a signed system hashtree, verifies it with avbtool and rejects
+bundled AOSP test keys. Its report cannot authorize flashing. Whole-bundle
+vbmeta chain, image-to-target-files consistency and device boot-chain trust
+remain unverified.
+
+The MP01 accessibility default now enables the service only during initial
+setup, so a later user choice to disable it survives reboot or app replacement. The
+legacy `clean_a2` and `anti_flicker` commands accept only `0` or `1` pending
+device evidence; they are still blocked by production SELinux policy. These
+fixes were included in the refreshed source receipt above.
+
 ## Current prerequisites
 
-1. Allocate sufficient RAM to this qube: the guest reported 7.7 GiB initially,
-   then approximately 3.1 GiB as Xen ballooning adjusted it. Its configured
-   maximum cannot be established from these guest observations. Builds require
-   32 GiB allocated and 28 GiB available, with a four-job cap; prefer a 48 GiB
-   maximum/allocation to allow guest overhead. Swap does not satisfy this gate.
-2. Provision rootless Podman through normal qube administration. **Fedora stays
-   the host; Debian 12 runs inside the container.** The pinned recipe, package
-   snapshot endpoints and base-image digest are prepared; the image has not
-   been built or tested because no runtime is installed. Dependency resolution
-   and full source/prepared-graph verification still need a real container run.
-3. Connect the MP01 over USB and authorize the existing Android SDK's adb.
-   The retained SDK executable works, but `adb devices -l` currently lists no
-   device. Identify the serial and capture the fresh contract as shown below.
-4. Have qadmin correct the qpublish outbox lock ownership/mode problem.
-   `qpublish workspace-status` fails with `outbox lock has unsafe ownership or
-   mode`. Do not change its permissions here or bypass the broker. The registry
-   still assigns `MP01-LineageGSI` to target `15`, and `MP01-OS` to `main`.
-   qadmin must authorize any intended `grapheneos-17` publication target before
-   staging; a local branch name is not that authorization. Nothing was staged
-   or pushed during this implementation.
+1. Allocate sufficient RAM to this qube: after the operator restarted `MP01`
+   on 2026-09-23, the guest reported about 3.1 GiB allocated and 2.2 GiB
+   available. Xen `memory/static-max` remains 8 GiB (`8388608` KiB), with no
+   `hotplug-max`. The earlier 40 GiB intended maximum is still not effective
+   for this qube; qadmin needs to inspect its persisted `maxmem` setting.
+   Qubes' maximum is only a ceiling for memory balancing. Qadmin must arrange
+   at least 32 GiB currently allocated and 28 GiB available, potentially by
+   raising initial `memory` or using a fixed allocation if balancing shrinks
+   the guest again. The operator can change only the maximum. Builds keep a
+   four-job cap. Swap does not satisfy the RAM gate. See Qubes' definitions of
+   [`memory` and `maxmem`](https://doc.qubes-os.org/projects/core-admin-client/en/release4.2/manpages/qvm-prefs.html)
+   and its [memory-balancer behavior](https://doc.qubes-os.org/en/latest/developer/services/qmemman.html).
+2. Rootless Podman 5.8.4 is available. **Fedora stays the host; Debian 12 runs
+   inside the container.** The digest-pinned image built successfully after the
+   Debian snapshot recipe enabled `contrib` for the `repo` launcher. Rootless
+   source sync uses `slirp4netns`; offline preparation, verification and builds
+   use no network. The pinned 1,057-project sync completed, and the source
+   receipt above passed offline verification. An interrupted full-history fetch
+   was resumed with guarded shallow fetches of the exact locked revisions;
+   completed projects were retained. The source monitor kept a 240 GiB
+   free-space floor. The original 429.8 GiB post-cleanup measurement above is
+   historical; approximately 261 GiB was free at the latest build preflight.
+3. Later, attach the MP01 to a dedicated device-test/flashing qube and
+   authorize adb there. No phone needs to be attached to the development qube
+   or flashed immediately after a build. Identify the serial and capture the
+   fresh, read-only device contract before making vendor compatibility or
+   partition decisions, as described below. The retained SDK executable works
+   in this qube, but `adb devices -l` currently lists no device.
+4. `qpublish workspace-status` now succeeds, and the registry authorizes
+   `Minimal-GrapheneOS` for publication to `main`. Its initial `main` commit
+   has been created, and this qube cloned it through qpublish. The old
+   `MP01-LineageGSI` assignment still targets `15`; GrapheneOS work must not
+   be staged there as a substitute.
+   `MP01-OS` remains authorized for `main`. Publication continues only through
+   qpublish review, with no direct push from this qube.
 
-The source-sync disk budget passes after cleanup. The actual build preflight
-correctly rejects the present RAM allocation and missing container identity.
-No memory stress allocation was used to force balloon growth.
+The build disk preflight passes at approximately 261 GiB free against its
+240 GiB minimum. After restart, the RAM gate rejects approximately 3.1 GiB
+allocated and 2.2 GiB available against its 32 GiB allocated and 28 GiB
+available minimums. The running Xen ceiling remains 8 GiB, so the intended
+maximum did not take effect across this restart. Even after qadmin corrects the
+ceiling, the maximum by itself does not guarantee enough initial allocation.
+Swap does not satisfy the RAM gate. No memory stress allocation was used to
+force balloon growth.
 
 ## Verification completed
 
-**127 Python host tests passed:** 49 retained artifact-auditor, six preserved
+The earlier **127 Python host tests passed:** 49 retained artifact-auditor, six preserved
 source-lock, 37 existing signer-inventory, 17 new build/source/transcript, 14 new
 signer-profile and four device-selection tests. The new transcript tests cover
 nonzero build exit, failed log fsync, exhausted disk reserve and failed resource
@@ -120,16 +160,27 @@ monitoring. The existing native e-ink command-stream tests also compiled with
 warnings treated as errors and passed.
 
 Additional checks passed for container-shell syntax, signed upstream manifest
-verification, exact compatibility-patch commit reproduction and GNU Make
-package selection for both `mp01` and `husky`. The device collector failed
-cleanly with a disconnected serial and created no inventory directory. The
-container runner refused to start without Podman. These are host/tooling
-results; container execution, Android compilation and every device acceptance
-row remain untested.
+verification, exact patch-result commit reproduction and GNU Make package
+selection for both `mp01` and `husky`. The device collector failed cleanly
+with a disconnected serial and created no inventory directory. The pinned
+container source sync and offline `verify-source` passed, with 1,057 locked
+projects, two applied patches and 159 imported MP01 files recorded in the
+receipt. Focused builder tests passed after enabling Debian `contrib`, rootless
+`slirp4netns`, bounded shallow source fetches and resume-aware disk accounting.
+These checks establish source preparation, not Android compilation or any
+device acceptance row.
+
+After the source-side corrections, five AVB gate tests using real pinned
+avbtool fixtures and three accessibility-default policy tests passed. The
+boot receiver compiled against the local Android API with app-type stubs,
+native daemon dispatch tests passed with warnings treated as errors, and
+manifest XML parsing passed. The new receipt passed offline source verification.
 
 ## Fresh device capture
 
-Use the serial printed for the MP01, never an inferred first attached device:
+Use the serial printed for the MP01, never an inferred first attached device.
+The following paths assume a checkout and adb installation in the qube where
+the MP01 is attached; adjust only those paths for the dedicated test qube:
 
 ```bash
 cd /home/user/MP01-LineageOS
@@ -147,6 +198,29 @@ private (directory mode 0700, files 0600); only reviewed summaries belong in Git
 If vendor identity differs, inspect it manually and review the identity rule;
 do not add a generic MediaTek or arm64 bypass.
 
+Keep source edits, Android builds and build caches in this development qube,
+with Debian 12 inside its pinned container. Keep private release keys in the
+separate signing environment. The dedicated MP01 test/flashing qube can remain
+offline except for the [manually attached MP01 through `sys-usb`](https://doc.qubes-os.org/en/r4.3/user/how-to-guides/how-to-use-usb-devices.html).
+Run read-only device capture there and use [Qubes inter-qube file copy](https://doc.qubes-os.org/en/r4.3/user/how-to-guides/how-to-copy-and-move-files.html)
+to transfer its private inventory back to development;
+record the source qube, MP01 serial, capture time and file hashes. This is
+device evidence, not authorization to flash. The phone need not be connected
+until this inventory is needed, and the first installation can wait after the
+image is built.
+
+When signed release packaging exists, transfer the complete signed and audited
+bundle to the test/flashing qube, not a bare `system.img`. Verify its
+authenticated checksums against trusted public project verification material
+provisioned independently of the copied bundle. Verify the source/provenance
+record, signer inventory, required vendor baseline and intended installation
+profile there before any partition operation. A file copy alone proves neither
+authenticity nor device compatibility. The exact partition/recovery contract
+and USB executor are still unimplemented, so there is no flash-ready bundle or
+procedure yet. Ordinary updates must preserve userdata and metadata; a clean
+install/data wipe, if one proves necessary, needs explicit confirmation for
+that particular flashing session.
+
 Review firmware/kernel versions, bootloader state, ABI/binder, partitions and
 fstab, VNDK/VINTF, encryption and keystore services, and the resolved light/e-ink
 nodes. Kernel configuration reads may be denied; missing evidence needs a
@@ -162,7 +236,7 @@ debugfs denial in compiled production policy and on-device.
 
 ## Installation and release work still to do
 
-Complete real source sync/build and the device compatibility work first. Stop
+Complete the first full build and device compatibility work first. Stop
 with a reproducible Android 17 incompatibility report if the vendor stack
 cannot satisfy release requirements; do not weaken compatibility checks or
 silently downgrade. Record every hardening exception with component, failure,
