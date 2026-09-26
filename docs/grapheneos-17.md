@@ -133,16 +133,13 @@ fixes were included in the refreshed source receipt above.
    fresh, read-only device contract before making vendor compatibility or
    partition decisions, as described below. The retained SDK executable works
    in this qube, but `adb devices -l` currently lists no device.
-4. Have qadmin correct the qpublish outbox lock ownership/mode problem.
-   `qpublish workspace-status` fails with `outbox lock has unsafe ownership or
-   mode`. Read-only inspection found
-   `~/.local/share/qpublish/outbox/.stage.lock` is a regular file owned by
-   `user:user` but mode `0644`; qpublish requires no group/other permission
-   bits. Do not change its permissions here or bypass the broker. The registry
-   still assigns `MP01-LineageGSI` to target `15`, and `MP01-OS` to `main`.
-   qadmin must authorize any intended `grapheneos-17` publication target before
-   staging; a local branch name is not that authorization. Nothing was staged
-   or pushed during this implementation.
+4. `qpublish workspace-status` now succeeds, and the registry authorizes
+   `Minimal-GrapheneOS` for publication to `main`. Its initial `main` commit
+   has been created, and this qube cloned it through qpublish. The old
+   `MP01-LineageGSI` assignment still targets `15`; GrapheneOS work must not
+   be staged there as a substitute.
+   `MP01-OS` remains authorized for `main`. Publication continues only through
+   qpublish review, with no direct push from this qube.
 
 The build disk preflight passes at approximately 261 GiB free against its
 240 GiB minimum. After restart, the RAM gate rejects approximately 3.1 GiB
